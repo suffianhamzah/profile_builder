@@ -230,3 +230,4 @@ Tradeoffs
 
 # Risks
 - Cant polish the code or the UI in time
+- Need to cut scope of proposed architecture to simplify

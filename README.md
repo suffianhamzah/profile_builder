@@ -1,4 +1,4 @@
-# Atlas Travel Profile Builder
+#  Travel Profile Builder
 
 A small single-user application that builds a durable travel profile through conversation. The chat streams assistant responses while a read-only profile remains visible beside it. Profile changes are persisted locally, and conflicting changes require explicit human confirmation.
 
@@ -81,3 +81,7 @@ Accepting or rejecting a conflict is applied deterministically without another a
 JSON persistence is designed for this local demonstration, not serverless deployment, concurrent processes, or multiple users.
 
 Detailed product and architecture choices are recorded in [`docs/decisions.md`](docs/decisions.md). The implementation sequence is in [`docs/plan.md`](docs/plan.md), and live progress is tracked in [`docs/task-list.md`](docs/task-list.md).
+
+## What to prioritize if i had another day
+- Polish the user <-> agent conversation experience to ensure a seamless experience: this makes or break the application functionality. I would build a golden dataset of conversations that covers the core use cases of the profile builder like completing a profile, handling different conflict situations. This also involves testing with different models for the two core LLM calls (analysis, and response synthesis)
+- Add the nice to haves requirements into the project
