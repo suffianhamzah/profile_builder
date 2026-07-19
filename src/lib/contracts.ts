@@ -129,6 +129,14 @@ export type ResolveConflictResponse = {
   state: AppState;
 };
 
+export type ClearStateRequest = {
+  target: "conversation" | "profile";
+};
+
+export type ClearStateResponse = {
+  state: AppState;
+};
+
 export type ApiError = {
   error: string;
 };

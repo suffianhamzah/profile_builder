@@ -5,6 +5,8 @@ import {
   AppState,
   ChatEvent,
   ChatRequest,
+  ClearStateRequest,
+  ClearStateResponse,
   Message,
   ProfileConflict,
   ResolveConflictRequest,
@@ -41,7 +43,14 @@ function prettyValue(value: string) {
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
-function ProfilePanel({ profile }: { profile: TravelProfile }) {
+type ProfilePanelProps = {
+  profile: TravelProfile;
+  disabled: boolean;
+  clearing: boolean;
+  onClear: () => void;
+};
+
+function ProfilePanel({ profile, disabled, clearing, onClear }: ProfilePanelProps) {
   const hasProfile =
     Boolean(profile.budgetStyle || profile.travelPace) ||
     listFields.some((field) => (profile[field] as string[]).length > 0);
@@ -53,7 +62,17 @@ function ProfilePanel({ profile }: { profile: TravelProfile }) {
           <p className="eyebrow">Your travel compass</p>
           <h2 id="profile-heading">Travel profile</h2>
         </div>
-        <span className="live-badge"><i aria-hidden="true" />Live</span>
+        <div className="heading-actions">
+          <span className="live-badge"><i aria-hidden="true" />Live</span>
+          <button
+            type="button"
+            className="clear-button"
+            disabled={disabled}
+            onClick={onClear}
+          >
+            {clearing ? "Clearing…" : "Clear profile"}
+          </button>
+        </div>
       </div>
 
       {!hasProfile ? (
@@ -181,6 +200,7 @@ export default function Home() {
   const [loadingState, setLoadingState] = useState(true);
   const [sending, setSending] = useState(false);
   const [resolving, setResolving] = useState(false);
+  const [clearingTarget, setClearingTarget] = useState<ClearStateRequest["target"] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const conversationEnd = useRef<HTMLDivElement>(null);
 
@@ -288,13 +308,46 @@ export default function Home() {
     }
   }
 
+  async function clearSavedState(target: ClearStateRequest["target"]) {
+    if (loadingState || sending || resolving || clearingTarget) return;
+
+    const description = target === "conversation"
+      ? "Clear the saved conversation? Your travel profile will be kept."
+      : "Clear your travel profile? Your conversation will be kept.";
+    if (!window.confirm(description)) return;
+
+    setClearingTarget(target);
+    setError(null);
+    try {
+      const response = await fetch("/api/state/clear", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ target } satisfies ClearStateRequest),
+      });
+      if (!response.ok) {
+        const body = (await response.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(body?.error || `Could not clear the ${target} (${response.status}).`);
+      }
+
+      const result = (await response.json()) as ClearStateResponse;
+      setProfile(result.state.profile);
+      setMessages(result.state.messages);
+      setPendingConflicts(result.state.pendingConflicts);
+      setStreamingText("");
+    } catch (clearError) {
+      setError(clearError instanceof Error ? clearError.message : `Could not clear the ${target}.`);
+    } finally {
+      setClearingTarget(null);
+    }
+  }
+
   function submitChat(event: FormEvent) {
     event.preventDefault();
     void sendMessage(draft);
   }
 
   const activeConflict = pendingConflicts[0];
-  const busy = sending || resolving;
+  const busy = sending || resolving || clearingTarget !== null;
 
   return (
     <main className="app-shell">
@@ -313,7 +366,17 @@ export default function Home() {
               <p className="eyebrow">Plan through conversation</p>
               <h2 id="chat-heading">Where will you go next?</h2>
             </div>
-            <span className="privacy-note">One local travel profile</span>
+            <div className="heading-actions">
+              <span className="privacy-note">One local travel profile</span>
+              <button
+                type="button"
+                className="clear-button"
+                disabled={loadingState || busy || messages.length === 0}
+                onClick={() => void clearSavedState("conversation")}
+              >
+                {clearingTarget === "conversation" ? "Clearing…" : "Clear conversation"}
+              </button>
+            </div>
           </div>
 
           <div className="conversation" aria-live="polite" aria-busy={loadingState}>
@@ -388,7 +451,12 @@ export default function Home() {
           </div>
         </section>
 
-        <ProfilePanel profile={profile} />
+        <ProfilePanel
+          profile={profile}
+          disabled={loadingState || busy}
+          clearing={clearingTarget === "profile"}
+          onClear={() => void clearSavedState("profile")}
+        />
       </div>
     </main>
   );

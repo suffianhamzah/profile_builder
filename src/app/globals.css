@@ -90,6 +90,20 @@ button { color: inherit; }
 
 .chat-heading h2, .profile-heading-row h2 { margin: 0; font: 500 26px/1.2 Georgia, serif; letter-spacing: -0.025em; }
 .privacy-note { margin-top: 8px; color: var(--muted); font-size: 12px; white-space: nowrap; }
+.heading-actions { display: flex; align-items: center; gap: 10px; }
+.clear-button {
+  margin-top: 5px;
+  padding: 5px 8px;
+  border: 0;
+  border-radius: 7px;
+  color: var(--muted);
+  background: transparent;
+  cursor: pointer;
+  font-size: 11px;
+}
+.clear-button:hover:not(:disabled) { color: #8f302d; background: #fff0ee; }
+.clear-button:focus-visible { outline: 2px solid #789b8b; outline-offset: 2px; }
+.clear-button:disabled { opacity: .5; cursor: not-allowed; }
 
 .conversation { overflow-y: auto; padding: 34px 11%; scroll-behavior: smooth; }
 
@@ -184,7 +198,7 @@ button { color: inherit; }
 
 .profile-panel { overflow-y: auto; background: #f3f6f2; }
 .profile-heading-row { padding: 28px 30px 23px; }
-.live-badge { display: inline-flex; align-items: center; gap: 6px; margin-top: 8px; padding: 5px 8px; color: var(--forest); background: white; border: 1px solid #d5dfd8; border-radius: 999px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
+.live-badge { display: inline-flex; align-items: center; gap: 6px; margin-top: 5px; padding: 5px 8px; color: var(--forest); background: white; border: 1px solid #d5dfd8; border-radius: 999px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
 .live-badge i { width: 6px; height: 6px; border-radius: 50%; background: #52a275; }
 .profile-empty { margin: 19vh auto 0; padding: 0 30px; max-width: 360px; text-align: center; }
 .empty-mark { width: 46px; height: 46px; border-radius: 14px; font-size: 20px; }
@@ -217,6 +231,7 @@ button { color: inherit; }
 
 @media (max-width: 560px) {
   .privacy-note, .composer-hint { display: none; }
+  .heading-actions { flex-wrap: wrap; justify-content: flex-end; }
   .chat-heading h2, .profile-heading-row h2 { font-size: 22px; }
   .chat-heading { padding-top: 20px; padding-bottom: 18px; }
   .conversation { padding-top: 24px; }
