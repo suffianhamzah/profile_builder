@@ -184,6 +184,8 @@ While a clarification is visible, the main message composer becomes the single p
 
 When a turn creates a conflict, the server also skips the general responder call. It persists one deterministic assistant message directing attention to the clarification UI, then focuses the composer when the turn finishes. This keeps the assistant response, pending state, and available action synchronized.
 
+When a typed custom answer resolves the conflict, the responder receives explicit transient context identifying it as a completed custom resolution. This lets it acknowledge the newly applied profile value without mistaking the post-update snapshot for a value that was already present.
+
 The panel displays the affected field, current value, proposed value, and short reason, with three response paths:
 
 - **Use proposed value:** Apply the proposed change and remove the conflict.

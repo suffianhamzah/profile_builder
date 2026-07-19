@@ -122,5 +122,6 @@ describe("buildResponderInstructions", () => {
     expect(prompt).toContain("If Pending conflicts is empty, never say");
     expect(prompt).toContain('"decision":"reject"');
     expect(prompt).toContain('"existingValue":"relaxed"');
+    expect(prompt).toContain('For a "custom" resolution');
   });
 });

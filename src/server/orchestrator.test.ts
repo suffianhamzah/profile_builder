@@ -200,6 +200,7 @@ describe("typed conflict clarification", () => {
         savedState = state;
       },
     };
+    let responderInput: RespondToTurnInput | undefined;
     const modelClient: ModelClient = {
       async analyzeTurn() {
         return {
@@ -216,7 +217,8 @@ describe("typed conflict clarification", () => {
           },
         };
       },
-      async *streamResponse() {
+      async *streamResponse(input) {
+        responderInput = input;
         yield "Balanced pace saved.";
       },
     };
@@ -236,6 +238,12 @@ describe("typed conflict clarification", () => {
       pendingConflicts: [],
     });
     expect(savedState.profile.travelPace).toBe("balanced");
+    expect(responderInput?.resolvedConflict).toEqual({
+      decision: "custom",
+      field: "travelPace",
+      existingValue: "relaxed",
+      proposedValue: "packed",
+    });
   });
 });
 

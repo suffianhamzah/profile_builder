@@ -46,6 +46,11 @@ export async function* runChatTurn(
   const pendingConflictIdsBeforeTurn = new Set(
     state.pendingConflicts.map((conflict) => conflict.id),
   );
+  const targetedConflict = request.resolvingConflictId
+    ? state.pendingConflicts.find(
+        (conflict) => conflict.id === request.resolvingConflictId,
+      )
+    : undefined;
   state = { ...state, messages: [...state.messages, userMessage] };
   await dependencies.store.save(state);
 
@@ -107,7 +112,20 @@ export async function* runChatTurn(
 
     yield* streamAndPersistResponse(
       state,
-      { state, destinationResults },
+      {
+        state,
+        destinationResults,
+        ...(targetedConflict
+          ? {
+              resolvedConflict: {
+                decision: "custom" as const,
+                field: targetedConflict.field,
+                existingValue: targetedConflict.existingValue,
+                proposedValue: targetedConflict.proposedValue,
+              },
+            }
+          : {}),
+      },
       dependencies,
     );
   } catch (error) {

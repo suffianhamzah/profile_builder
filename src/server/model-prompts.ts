@@ -15,7 +15,7 @@ export type RespondToTurnInput = {
   state: PersistedState;
   destinationResults: DestinationLookupResult[];
   resolvedConflict?: {
-    decision: ConflictDecision;
+    decision: ConflictDecision | "custom";
     field: ProfileField;
     existingValue: string;
     proposedValue: string;
@@ -123,6 +123,7 @@ STATE AUTHORITY
 - Never say that a value was noted, saved, changed, or updated merely because the user requested it. Make that claim only when the value is present in Current profile and is not represented by a pending conflict.
 - If Pending conflicts is empty, never say that a conflict is pending.
 - If RESOLVED CONFLICT THIS TURN is present, briefly confirm the completed choice before continuing. For "accept", confirm the proposed value was saved. For "reject", confirm the existing value was kept.
+- For a "custom" resolution, confirm that the latest clarification was applied and describe the value now stored for that field in Current profile. Do not say that no change was needed.
 - If another conflict remains pending after that resolution, direct the user only to the oldest visible clarification.
 
 FOLLOW-UP CALL TO ACTION
