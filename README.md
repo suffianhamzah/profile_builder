@@ -4,15 +4,15 @@ A small single-user application that builds a durable travel profile through con
 
 ## Run locally
 
-Requirements: Node.js 20.9 or newer and an OpenRouter API key.
+Requirements: Node.js 20.9 or newer, GNU Make, and an OpenRouter API key. Google Chrome is optional and used only for browser verification.
 
 ```bash
-npm install
-cp .env.example .env.local
-npm run dev
+make setup
 ```
 
-Configure `.env.local`:
+`make setup` installs locked application dependencies, installs the vendored browser-skill dependency, and creates `.env` from `.env.example` only when no local environment file exists.
+
+Configure `.env`:
 
 ```text
 MODEL_API_KEY=your-openrouter-key
@@ -21,15 +21,28 @@ MODEL_NAME=a-model-that-supports-json-schema-structured-outputs
 STATE_FILE_PATH=./data/state.json
 ```
 
+Then start the app:
+
+```bash
+make dev
+```
+
 Open [http://localhost:3000](http://localhost:3000). Never prefix the API key with `NEXT_PUBLIC_`; model calls run only on the server.
 
 ## Verify
 
 ```bash
-npm test
-npm run typecheck
-npm run build
+make check
 ```
+
+The repository includes the project-local web-browser skill at `.agents/skills/web-browser`. To drive the running app through Chrome:
+
+```bash
+make browser-start
+make browser-open
+```
+
+Run `make help` for the common commands. Override `APP_URL` when the app is running elsewhere, for example `make browser-open APP_URL=http://localhost:3100`.
 
 ## Five-minute walkthrough
 
