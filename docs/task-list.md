@@ -39,6 +39,7 @@ Updated as implementation progresses. Status values are `pending`, `in progress`
 - [x] **complete** — Render structured profile fields read-only.
 - [x] **complete** — Show only the oldest pending conflict as an inline clarification.
 - [x] **complete** — Implement proposed-value and current-value actions.
+- [x] **complete** — Stream a persisted confirmation and next question after deterministic conflict resolution.
 - [x] **complete** — Implement the free-form clarification path.
 - [x] **complete** — Show loading and error states.
 
@@ -54,10 +55,10 @@ Updated as implementation progresses. Status values are `pending`, `in progress`
 
 ## Verification log
 
-- **Automated:** 26 tests across seven files pass.
+- **Automated:** 33 tests across nine files pass.
 - **Static:** TypeScript checks pass.
 - **Build:** Next.js production build passes with all expected routes.
 - **Dependency audit:** No high or critical findings; npm reports two moderate findings through Next.js's nested PostCSS version.
-- **Browser:** Verified initial empty state, SSE chat streaming, structured profile updates, reload persistence, known Tokyo lookup, unknown Malaysia fallback, deterministic vegetarian/steakhouse conflict, accept resolution, ambiguous custom answer remaining pending, and explicit free-form replacement.
-- **Browser fixes:** Added current-turn-only destination filtering, deterministic dietary conflict detection, deterministic explicit custom resolution, and an application icon after browser verification exposed gaps.
+- **Browser:** Verified initial empty state, SSE chat streaming, structured profile updates, reload persistence, known Tokyo lookup, unknown Atlantis fallback, scalar conflict handling, and semantic vegetarian/steakhouse conflict handling.
+- **Browser fixes:** Added current-turn-only destination filtering, generalized semantic conflict instructions with a field-level application guard, deterministic explicit custom resolution, authoritative pending-conflict responder context, and an application icon after browser verification exposed gaps.
 - **Handoff state:** Browser-test state was moved out of the repository so manual testing starts from an empty profile.

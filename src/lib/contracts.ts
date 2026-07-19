@@ -125,10 +125,6 @@ export type ResolveConflictRequest = {
   decision: "accept" | "reject";
 };
 
-export type ResolveConflictResponse = {
-  state: AppState;
-};
-
 export type ClearStateRequest = {
   target: "conversation" | "profile";
 };

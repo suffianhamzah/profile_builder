@@ -105,4 +105,32 @@ describe("buildResponderInstructions", () => {
     expect(prompt).toContain("the only call to action is to resolve");
     expect(prompt).toContain('"id":"conflict-1"');
   });
+
+  it("treats current conflict state as authoritative after a resolution", () => {
+    const state = createEmptyState();
+    state.messages = [
+      {
+        id: "assistant-1",
+        role: "assistant",
+        content: "A travel pace conflict is pending.",
+        createdAt: "2026-07-19T12:00:00.000Z",
+      },
+    ];
+
+    const prompt = buildResponderInstructions({
+      state,
+      destinationResults: [],
+      resolvedConflict: {
+        decision: "reject",
+        field: "travelPace",
+        existingValue: "relaxed",
+        proposedValue: "packed",
+      },
+    });
+
+    expect(prompt).toContain("sole source of truth");
+    expect(prompt).toContain("If Pending conflicts is empty, never say");
+    expect(prompt).toContain('"decision":"reject"');
+    expect(prompt).toContain('"existingValue":"relaxed"');
+  });
 });

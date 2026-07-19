@@ -10,7 +10,6 @@ import {
   Message,
   ProfileConflict,
   ResolveConflictRequest,
-  ResolveConflictResponse,
   TravelProfile,
   createEmptyProfile,
 } from "@/lib/contracts";
@@ -290,17 +289,10 @@ export default function Home() {
     try {
       const response = await fetch(`/api/conflicts/${encodeURIComponent(conflict.id)}/resolve`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", Accept: "text/event-stream" },
         body: JSON.stringify({ decision } satisfies ResolveConflictRequest),
       });
-      if (!response.ok) {
-        const body = (await response.json().catch(() => null)) as { error?: string } | null;
-        throw new Error(body?.error || `Could not save that choice (${response.status}).`);
-      }
-      const result = (await response.json()) as ResolveConflictResponse;
-      setProfile(result.state.profile);
-      setMessages(result.state.messages);
-      setPendingConflicts(result.state.pendingConflicts);
+      await readChatEventStream(response, handleChatEvent);
     } catch (resolveError) {
       setError(resolveError instanceof Error ? resolveError.message : "Could not save that choice.");
     } finally {
@@ -396,7 +388,7 @@ export default function Home() {
             ) : (
               <>
                 {messages.map((message) => <MessageBubble key={message.id} message={message} />)}
-                {(streamingText || sending) && (
+                {(streamingText || sending || resolving) && (
                   <div className="message-row assistant">
                     <div className="assistant-avatar" aria-hidden="true">A</div>
                     <div className={`message-bubble streaming ${streamingText ? "" : "waiting"}`}>

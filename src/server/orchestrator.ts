@@ -4,18 +4,31 @@ import {
   type ChatRequest,
   type DestinationLookupResult,
   type Message,
+  type ProfileConflict,
+  type ResolveConflictRequest,
 } from "../lib/contracts";
 import { getDestinationInfo } from "./destinations";
 import type { ModelClient } from "./model-client";
 import {
   addDeterministicCustomResolution,
   applyTurnAnalysis,
+  resolveConflict,
 } from "./profile-updates";
 import type { StateStore } from "./state-store";
 
 export type ChatTurnDependencies = {
   modelClient: ModelClient;
   store: StateStore;
+};
+
+export type ResolvedConflictTurn = {
+  state: AppState;
+  resolution: {
+    decision: ResolveConflictRequest["decision"];
+    field: ProfileConflict["field"];
+    existingValue: string;
+    proposedValue: string;
+  };
 };
 
 export async function* runChatTurn(
@@ -57,22 +70,11 @@ export async function* runChatTurn(
       pendingConflicts: state.pendingConflicts,
     };
 
-    let assistantText = "";
-    for await (const text of dependencies.modelClient.streamResponse({
+    yield* streamAndPersistResponse(
       state,
-      destinationResults,
-    })) {
-      assistantText += text;
-      yield { type: "assistant.delta", text };
-    }
-
-    const assistantMessage = createMessage("assistant", assistantText);
-    state = {
-      ...state,
-      messages: [...state.messages, assistantMessage],
-    };
-    await dependencies.store.save(state);
-    yield { type: "turn.completed", assistantMessage };
+      { state, destinationResults },
+      dependencies,
+    );
   } catch (error) {
     console.error("Chat turn failed", error);
     yield {
@@ -83,6 +85,69 @@ export async function* runChatTurn(
           : "Atlas could not complete that turn.",
     };
   }
+}
+
+export async function applyConflictDecision(
+  id: string,
+  decision: ResolveConflictRequest["decision"],
+  store: StateStore,
+): Promise<ResolvedConflictTurn> {
+  const currentState = await store.load();
+  const conflict = currentState.pendingConflicts.find((item) => item.id === id);
+  if (!conflict) {
+    throw new Error(`Conflict not found: ${id}`);
+  }
+
+  const state = resolveConflict(currentState, id, decision);
+  await store.save(state);
+  return {
+    state,
+    resolution: {
+      decision,
+      field: conflict.field,
+      existingValue: conflict.existingValue,
+      proposedValue: conflict.proposedValue,
+    },
+  };
+}
+
+export async function* runConflictResolutionResponse(
+  turn: ResolvedConflictTurn,
+  dependencies: ChatTurnDependencies,
+): AsyncGenerator<ChatEvent> {
+  yield {
+    type: "state.updated",
+    profile: turn.state.profile,
+    pendingConflicts: turn.state.pendingConflicts,
+  };
+  yield* streamAndPersistResponse(
+    turn.state,
+    {
+      state: turn.state,
+      destinationResults: [],
+      resolvedConflict: turn.resolution,
+    },
+    dependencies,
+  );
+}
+
+async function* streamAndPersistResponse(
+  state: AppState,
+  input: Parameters<ModelClient["streamResponse"]>[0],
+  dependencies: ChatTurnDependencies,
+): AsyncGenerator<ChatEvent> {
+  let assistantText = "";
+  for await (const text of dependencies.modelClient.streamResponse(input)) {
+    assistantText += text;
+    yield { type: "assistant.delta", text };
+  }
+
+  const assistantMessage = createMessage("assistant", assistantText);
+  await dependencies.store.save({
+    ...state,
+    messages: [...state.messages, assistantMessage],
+  });
+  yield { type: "turn.completed", assistantMessage };
 }
 
 async function lookupDestinations(

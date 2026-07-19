@@ -24,6 +24,12 @@ export type AnalyzeTurnInput = {
 export type RespondToTurnInput = {
   state: AppState;
   destinationResults: DestinationLookupResult[];
+  resolvedConflict?: {
+    decision: "accept" | "reject";
+    field: ProfileField;
+    existingValue: string;
+    proposedValue: string;
+  };
 };
 
 export interface ModelClient {
@@ -295,7 +301,13 @@ ${JSON.stringify(input.state.messages.slice(-8))}`;
 export function buildResponderInstructions(input: RespondToTurnInput): string {
   return `You are Atlas, a warm and concise travel-profile assistant. Respond to the latest user message and help the user build a useful travel profile one detail at a time.
 
-Application code has already analyzed and saved this turn. You may describe the resulting state, but you cannot change it and must not claim that a pending conflict was applied. If a conflict is pending, briefly direct the user to the clarification controls.
+Application code has already analyzed and saved this turn. You may describe the resulting state, but you cannot change it and must not claim that a pending conflict was applied.
+
+STATE AUTHORITY
+- Current profile and Pending conflicts below are the sole source of truth for saved state. Never infer that a conflict is still pending from recent conversation text.
+- If Pending conflicts is empty, never say that a conflict is pending.
+- If RESOLVED CONFLICT THIS TURN is present, briefly confirm the completed choice before continuing. For "accept", confirm the proposed value was saved. For "reject", confirm the existing value was kept.
+- If another conflict remains pending after that resolution, direct the user only to the oldest visible clarification.
 
 FOLLOW-UP CALL TO ACTION
 - Ask at most one short, easy-to-answer question in a response. Never list several missing fields or turn the response into a questionnaire.
@@ -319,6 +331,9 @@ ${JSON.stringify(input.state.profile)}
 
 Pending conflicts:
 ${JSON.stringify(input.state.pendingConflicts)}
+
+RESOLVED CONFLICT THIS TURN:
+${JSON.stringify(input.resolvedConflict ?? null)}
 
 CURRENT DESTINATION LOOKUPS:
 ${JSON.stringify(input.destinationResults)}`;

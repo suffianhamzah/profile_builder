@@ -38,7 +38,7 @@ npm run build
 3. Mention a supported destination and verify that the assistant asks a follow-up using the hardcoded seasonal, activity, or budget information.
 4. Mention an unsupported destination and verify that the assistant says destination facts are unavailable rather than inventing them.
 5. Contradict a stored preference. Confirm that the original remains unchanged and an inline clarification offers the proposed value, current value, and a free-form answer.
-6. Resolve the clarification, reload the page, and confirm that the profile, chat, and unresolved conflicts persist.
+6. Resolve the clarification and confirm that Atlas acknowledges the saved choice before asking one next question. Reload and confirm that the profile, chat, and unresolved conflicts persist.
 
 ## Architecture
 
@@ -51,6 +51,8 @@ Each chat turn has three steps:
 3. A separate responder call receives the resulting profile, recent conversation, pending conflicts, and exact destination results. Its text is streamed to the browser as typed SSE events.
 
 The analyzer is the only model component allowed to propose structured changes. The responder cannot write the profile or run tools. The conflict card is rendered from persisted application state, so confirmation does not depend on the responder remembering to mention it.
+
+Accepting or rejecting a conflict is applied deterministically without another analyzer call. The server then streams a responder-only confirmation using the saved profile and resolved conflict as authoritative context, and continues progressive profile collection with at most one question.
 
 `JsonStateStore` persists one `AppState` containing the profile, conversation, and pending conflicts. Its narrow interface leaves room for a later SQLite implementation without adding database abstractions now.
 

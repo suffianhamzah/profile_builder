@@ -186,19 +186,20 @@ type ResolveConflictRequest =
   | { decision: "reject" };
 ```
 
-`POST /api/conflicts/:id/resolve` handles the two deterministic button choices without an LLM call.
+`POST /api/conflicts/:id/resolve` applies the two button choices deterministically without rerunning the analyzer. After saving the choice, it streams a responder-only turn that confirms what was kept or changed and continues with one useful follow-up question. The resolved conflict is passed as explicit context, and the resulting assistant message is persisted.
 
 A free-form answer uses `POST /api/chat` with an optional `resolvingConflictId`. The analyzer receives that conflict as explicit context. If its structured result clearly resolves the targeted field, the server applies the human-provided resolution and removes the conflict. If the answer remains ambiguous or changes another field, the original conflict stays pending.
 
 **Guardrails:**
 
 - The model cannot dismiss or overwrite a conflict directly.
+- The current persisted `pendingConflicts` list is authoritative; old conversation text cannot make the responder claim that a resolved conflict is still pending.
 - Chat remains usable while a conflict is pending.
 - Unresolved conflicts survive reloads.
 - The responder should acknowledge a conflict, but the inline clarification panel is the guaranteed interaction.
 - Pending conflicts are queued in creation order rather than displayed all at once.
 
-**Reasoning:** A single focused question is calmer and easier to answer than a stack of conflict cards. Free-form clarification preserves user control without forcing every preference into a binary choice.
+**Reasoning:** A single focused question is calmer and easier to answer than a stack of conflict cards. Free-form clarification preserves user control without forcing every preference into a binary choice. Streaming a responder-only turn after a deterministic button choice closes the conversational loop without asking the analyzer to reinterpret a decision the application already understands.
 
 ### D12. Test deterministic behavior and manually verify model behavior
 
