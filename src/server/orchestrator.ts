@@ -43,6 +43,9 @@ export async function* runChatTurn(
 ): AsyncGenerator<ChatEvent> {
   const userMessage = createMessage("user", request.message.trim());
   let state = await dependencies.store.load();
+  const pendingConflictIdsBeforeTurn = new Set(
+    state.pendingConflicts.map((conflict) => conflict.id),
+  );
   state = { ...state, messages: [...state.messages, userMessage] };
   await dependencies.store.save(state);
 
@@ -85,6 +88,18 @@ export async function* runChatTurn(
       yield* persistAssistantText(
         state,
         "I couldn't tell which preference you want me to remember. Please choose the current value, the proposed value, or give me a more specific answer.",
+        dependencies.store,
+      );
+      return;
+    }
+
+    const createdConflictThisTurn = state.pendingConflicts.some(
+      (conflict) => !pendingConflictIdsBeforeTurn.has(conflict.id),
+    );
+    if (createdConflictThisTurn) {
+      yield* persistAssistantText(
+        state,
+        "I found a preference that conflicts with your saved profile. Please answer the clarification below before we continue.",
         dependencies.store,
       );
       return;

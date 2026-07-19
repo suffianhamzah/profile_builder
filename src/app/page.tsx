@@ -171,6 +171,9 @@ export default function Home() {
   const [clearingTarget, setClearingTarget] = useState<ClearStateRequest["target"] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const conversationEnd = useRef<HTMLDivElement>(null);
+  const messageInput = useRef<HTMLTextAreaElement>(null);
+  const activeConflict = pendingConflicts[0];
+  const activeConflictId = activeConflict?.id;
 
   useEffect(() => {
     const controller = new AbortController();
@@ -199,6 +202,12 @@ export default function Home() {
   useEffect(() => {
     conversationEnd.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }, [messages, streamingText, pendingConflicts]);
+
+  useEffect(() => {
+    if (activeConflictId && !sending && !resolving) {
+      messageInput.current?.focus();
+    }
+  }, [activeConflictId, resolving, sending]);
 
   function handleChatEvent(event: ChatEvent) {
     if (event.type === "user.message.created") {
@@ -314,7 +323,6 @@ export default function Home() {
     void sendMessage(draft);
   }
 
-  const activeConflict = pendingConflicts[0];
   const busy = sending || resolving || clearingTarget !== null;
 
   return (
@@ -399,6 +407,7 @@ export default function Home() {
                 {activeConflict ? "Answer this clarification" : "Message Atlas"}
               </label>
               <textarea
+                ref={messageInput}
                 id="message"
                 rows={2}
                 value={draft}

@@ -89,6 +89,60 @@ describe("conflict resolution response", () => {
 });
 
 describe("typed conflict clarification", () => {
+  it("skips the responder and directs the user to a newly created clarification", async () => {
+    let savedState: PersistedState = {
+      ...createEmptyState(),
+      profile: { ...createEmptyState().profile, travelPace: "packed" },
+    };
+    const store: StateStore = {
+      async load() {
+        return savedState;
+      },
+      async save(state) {
+        savedState = state;
+      },
+    };
+    const streamResponse = vi.fn(async function* () {
+      yield "I'll update that now.";
+    });
+    const modelClient: ModelClient = {
+      async analyzeTurn() {
+        return {
+          operations: [],
+          semanticConflicts: [
+            {
+              field: "travelPace",
+              existingValue: "packed",
+              proposedValue: "relaxed",
+              reason: "This changes the saved travel pace.",
+              proposedOperations: [
+                { kind: "set", field: "travelPace", value: "relaxed" },
+              ],
+            },
+          ],
+          mentionedDestinations: [],
+        };
+      },
+      streamResponse,
+    };
+
+    const events: ChatEvent[] = [];
+    for await (const event of runChatTurn(
+      { message: "I'd like slow travel" },
+      { modelClient, store },
+    )) {
+      events.push(event);
+    }
+
+    expect(streamResponse).not.toHaveBeenCalled();
+    expect(savedState.profile.travelPace).toBe("packed");
+    expect(savedState.pendingConflicts).toHaveLength(1);
+    expect(events.find((event) => event.type === "assistant.delta")).toEqual({
+      type: "assistant.delta",
+      text: "I found a preference that conflicts with your saved profile. Please answer the clarification below before we continue.",
+    });
+  });
+
   it("keeps an unclear answer pending without asking the responder to invent an update", async () => {
     let savedState: PersistedState = stateWithPendingPaceConflict();
     const store: StateStore = {
