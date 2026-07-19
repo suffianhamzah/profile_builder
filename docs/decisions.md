@@ -87,9 +87,9 @@ type TravelProfile = {
 **Decision:** Persist a single user's profile, conversation messages, and pending conflicts in one server-side JSON file.
 
 ```ts
-type AppState = {
+type PersistedState = {
   profile: TravelProfile;
-  messages: Message[];
+  messages: ChatMessage[];
   pendingConflicts: ProfileConflict[];
 };
 ```
@@ -98,8 +98,8 @@ Use a minimal persistence boundary:
 
 ```ts
 interface StateStore {
-  load(): Promise<AppState>;
-  save(state: AppState): Promise<void>;
+  load(): Promise<PersistedState>;
+  save(state: PersistedState): Promise<void>;
 }
 ```
 
@@ -139,7 +139,7 @@ type ChatRequest = {
 type ChatEvent =
   | {
       type: "user.message.created";
-      userMessage: Message;
+      userMessage: ChatMessage;
     }
   | {
       type: "state.updated";
@@ -152,7 +152,7 @@ type ChatEvent =
     }
   | {
       type: "turn.completed";
-      assistantMessage: Message;
+      assistantMessage: ChatMessage;
     }
   | {
       type: "error";
@@ -160,7 +160,7 @@ type ChatEvent =
     };
 ```
 
-All request, state, and event contracts live in a shared TypeScript module imported by both server routes and React components.
+Request, response, and event contracts live in `src/lib/api-contracts.ts`, imported by both server routes and React components. Their durable payload types come from `src/lib/domain.ts`.
 
 **Event order:**
 
@@ -170,7 +170,7 @@ All request, state, and event contracts live in a shared TypeScript module impor
 4. Persist the complete assistant message.
 5. Emit `turn.completed`.
 
-`GET /api/state` returns the persisted `AppState` on initial page load.
+`GET /api/state` returns the `PersistedState` snapshot on initial page load.
 
 **Reasoning:** SSE is a conventional and reviewer-friendly streaming format, supports named event types, and needs no additional client dependency.
 
@@ -279,6 +279,17 @@ The `ModelClient.streamResponse` boundary is the extension seam. An Agents SDK i
 The responder must not list missing fields, repeat a recently asked question, or force a follow-up when the profile is already sufficient for the current conversation.
 
 **Reasoning:** Progressive collection keeps the conversation useful without making profile setup feel like a form. A stable priority gives the model a clear call to action while preserving room for a natural, destination-aware question.
+
+### D17. Separate durable domain, wire, and transient model types
+
+**Decision:** Organize types by lifecycle rather than keeping every shape in one contracts file:
+
+- `src/lib/domain.ts` owns durable business objects, including `TravelProfile`, `ChatMessage`, `ProfileConflict`, `ProfileOperation`, and the complete `PersistedState` JSON snapshot. It also contains stable destination reference data types.
+- `src/lib/api-contracts.ts` owns only browser/server wire shapes: requests, JSON responses, SSE events, and API errors.
+- `src/server/model-analysis.ts` owns transient analyzer proposals and results derived from the Zod structured-output schema.
+- `src/server/destinations.ts` owns the transient destination lookup result passed between orchestration and the responder.
+
+**Reasoning:** File location and type names should answer whether a value is durable, crosses an API boundary, or exists only during one server turn. Keeping transient model output out of shared client contracts also reduces accidental coupling between model implementation details and the UI.
 
 ## Open decisions
 

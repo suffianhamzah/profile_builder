@@ -1,28 +1,29 @@
 import OpenAI from "openai";
 import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
 import {
-  type AppState,
-  type DestinationLookupResult,
+  type ConflictDecision,
+  type PersistedState,
   type ProfileField,
-  type TurnAnalysis,
-} from "../lib/contracts";
+} from "../lib/domain";
+import type { DestinationLookupResult } from "./destinations";
 import {
   parseTurnAnalysis,
+  type TurnAnalysis,
   turnAnalysisResponseFormat,
 } from "./model-analysis";
 
 export { parseTurnAnalysis } from "./model-analysis";
 
 export type AnalyzeTurnInput = {
-  state: AppState;
+  state: PersistedState;
   resolvingConflictId?: string;
 };
 
 export type RespondToTurnInput = {
-  state: AppState;
+  state: PersistedState;
   destinationResults: DestinationLookupResult[];
   resolvedConflict?: {
-    decision: "accept" | "reject";
+    decision: ConflictDecision;
     field: ProfileField;
     existingValue: string;
     proposedValue: string;
@@ -210,7 +211,7 @@ CURRENT DESTINATION LOOKUPS:
 ${JSON.stringify(input.destinationResults)}`;
 }
 
-function recentMessages(state: AppState): ChatCompletionMessageParam[] {
+function recentMessages(state: PersistedState): ChatCompletionMessageParam[] {
   return state.messages.slice(-20).map((message) => ({
     role: message.role,
     content: message.content,

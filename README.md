@@ -42,7 +42,7 @@ npm run build
 
 ## Architecture
 
-The implementation is one Next.js and TypeScript application. Client and server share the contracts in `src/lib/contracts.ts`.
+The implementation is one Next.js and TypeScript application. Durable domain models live in `src/lib/domain.ts`, while browser/server request, response, and SSE contracts live in `src/lib/api-contracts.ts`. Transient model-analysis types remain server-owned.
 
 Each chat turn has three steps:
 
@@ -54,7 +54,7 @@ The analyzer is the only model component allowed to propose structured changes. 
 
 Accepting or rejecting a conflict is applied deterministically without another analyzer call. The selected preference is persisted and rendered as a user message, then the server streams a responder-only confirmation using the saved profile and resolved conflict as authoritative context. Progressive profile collection continues with at most one question.
 
-`JsonStateStore` persists one `AppState` containing the profile, conversation, and pending conflicts. Its narrow interface leaves room for a later SQLite implementation without adding database abstractions now.
+`JsonStateStore` persists one `PersistedState` containing the profile, conversation, and pending conflicts. Its narrow interface leaves room for a later SQLite implementation without adding database abstractions now.
 
 ## Deliberate scope cuts
 

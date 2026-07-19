@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { ChatEvent } from "./contracts";
+import type { ChatEvent } from "./api-contracts";
 import { readChatEventStream } from "./sse-client";
 
 function streamedResponse(chunks: string[]) {

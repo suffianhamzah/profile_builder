@@ -7,6 +7,7 @@ Updated as implementation progresses. Status values are `pending`, `in progress`
 - [x] **complete** — Create the Next.js and TypeScript scaffold.
 - [x] **complete** — Add minimal runtime and test dependencies.
 - [x] **complete** — Define shared domain, API, conflict, and SSE contracts.
+- [x] **complete** — Separate durable domain models, API wire contracts, and transient server analysis types.
 - [x] **complete** — Add `.env.example` and ignore `.env.local` and persisted runtime data.
 - [x] **complete** — Verify the empty application test, type-check, and build commands.
 

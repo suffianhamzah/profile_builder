@@ -1,4 +1,10 @@
-import type { DestinationInfo } from "../lib/contracts";
+import type { DestinationInfo } from "../lib/domain";
+
+// Per-turn tool output passed to the responder. It is never persisted.
+export type DestinationLookupResult = {
+  requestedName: string;
+  info: DestinationInfo | null;
+};
 
 const destinations: Record<string, DestinationInfo> = {
   lisbon: {

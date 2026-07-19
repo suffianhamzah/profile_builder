@@ -4,7 +4,7 @@ import type {
   ApiError,
   ClearStateRequest,
   ClearStateResponse,
-} from "@/lib/contracts";
+} from "@/lib/api-contracts";
 import { clearState } from "@/server/clear-state";
 import { stateStore } from "@/server/state-store";
 

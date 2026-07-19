@@ -1,4 +1,4 @@
-import type { ChatEvent } from "./contracts";
+import type { ChatEvent } from "./api-contracts";
 
 type EventHandler = (event: ChatEvent) => void;
 

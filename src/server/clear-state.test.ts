@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import type { AppState } from "../lib/contracts";
+import type { PersistedState } from "../lib/domain";
 import { clearState } from "./clear-state";
 
-const state: AppState = {
+const state: PersistedState = {
   profile: {
     budgetStyle: "midRange",
     travelPace: "relaxed",

@@ -1,4 +1,4 @@
-import type { ApiError, ChatRequest } from "@/lib/contracts";
+import type { ApiError, ChatRequest } from "@/lib/api-contracts";
 import { createModelClient } from "@/server/model-client";
 import { runChatTurn } from "@/server/orchestrator";
 import { encodeSseEvent } from "@/server/sse";

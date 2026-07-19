@@ -1,3 +1,7 @@
+// Durable business objects. PersistedState is the complete JSON snapshot read
+// and written by StateStore; other types here either live inside that snapshot
+// or describe stable travel-domain data.
+
 export const seasons = ["spring", "summer", "fall", "winter"] as const;
 export type Season = (typeof seasons)[number];
 
@@ -42,29 +46,9 @@ export type ListProfileOperation =
   | { kind: "add"; field: ListProfileField; values: string[] }
   | { kind: "remove"; field: ListProfileField; values: string[] };
 
+// Operations are persisted inside pending conflicts so an approved change can
+// be applied deterministically without asking the model to interpret it again.
 export type ProfileOperation = ScalarProfileOperation | ListProfileOperation;
-
-export type SemanticConflictProposal = {
-  field: ProfileField;
-  existingValue: string;
-  proposedValue: string;
-  reason: string;
-  proposedOperations: ProfileOperation[];
-};
-
-export type CustomConflictResolution = {
-  conflictId: string;
-  understood: boolean;
-  summary: string;
-  operations: ProfileOperation[];
-};
-
-export type TurnAnalysis = {
-  operations: ProfileOperation[];
-  semanticConflicts: SemanticConflictProposal[];
-  mentionedDestinations: string[];
-  customConflictResolution?: CustomConflictResolution;
-};
 
 export type ProfileConflict = {
   id: string;
@@ -76,19 +60,23 @@ export type ProfileConflict = {
   createdAt: string;
 };
 
-export type Message = {
+export type ConflictDecision = "accept" | "reject";
+
+export type ChatMessage = {
   id: string;
   role: "user" | "assistant";
   content: string;
   createdAt: string;
 };
 
-export type AppState = {
+export type PersistedState = {
   profile: TravelProfile;
-  messages: Message[];
+  messages: ChatMessage[];
   pendingConflicts: ProfileConflict[];
 };
 
+// DestinationInfo is stable tool reference data. It is compiled into the
+// server, not written to PersistedState.
 export type DestinationInfo = {
   name: string;
   bestSeasons: Season[];
@@ -99,43 +87,6 @@ export type DestinationInfo = {
     luxury: number;
   };
   visaNotes?: string;
-};
-
-export type DestinationLookupResult = {
-  requestedName: string;
-  info: DestinationInfo | null;
-};
-
-export type ChatRequest = {
-  message: string;
-  resolvingConflictId?: string;
-};
-
-export type ChatEvent =
-  | { type: "user.message.created"; userMessage: Message }
-  | {
-      type: "state.updated";
-      profile: TravelProfile;
-      pendingConflicts: ProfileConflict[];
-    }
-  | { type: "assistant.delta"; text: string }
-  | { type: "turn.completed"; assistantMessage: Message }
-  | { type: "error"; message: string };
-
-export type ResolveConflictRequest = {
-  decision: "accept" | "reject";
-};
-
-export type ClearStateRequest = {
-  target: "conversation" | "profile";
-};
-
-export type ClearStateResponse = {
-  state: AppState;
-};
-
-export type ApiError = {
-  error: string;
 };
 
 export function createEmptyProfile(): TravelProfile {
@@ -150,7 +101,7 @@ export function createEmptyProfile(): TravelProfile {
   };
 }
 
-export function createEmptyState(): AppState {
+export function createEmptyState(): PersistedState {
   return {
     profile: createEmptyProfile(),
     messages: [],

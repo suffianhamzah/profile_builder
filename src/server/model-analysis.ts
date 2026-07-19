@@ -6,8 +6,7 @@ import {
   scalarProfileFields,
   travelPaces,
   type ProfileOperation,
-  type TurnAnalysis,
-} from "../lib/contracts";
+} from "../lib/domain";
 
 const listOperationSchema = z.strictObject({
   kind: z.enum(["add", "remove"]),
@@ -29,27 +28,41 @@ const profileOperationSchema = z.union([
   listOperationSchema,
 ]);
 
+const semanticConflictSchema = z.strictObject({
+  field: z.enum([...scalarProfileFields, ...listProfileFields]),
+  existingValue: z.string(),
+  proposedValue: z.string(),
+  reason: z.string(),
+  proposedOperations: z.array(profileOperationSchema),
+});
+
+const customConflictResolutionSchema = z.strictObject({
+  conflictId: z.string(),
+  understood: z.boolean(),
+  summary: z.string(),
+  operations: z.array(profileOperationSchema),
+});
+
 const turnAnalysisSchema = z.strictObject({
   operations: z.array(profileOperationSchema),
-  semanticConflicts: z.array(
-    z.strictObject({
-      field: z.enum([...scalarProfileFields, ...listProfileFields]),
-      existingValue: z.string(),
-      proposedValue: z.string(),
-      reason: z.string(),
-      proposedOperations: z.array(profileOperationSchema),
-    }),
-  ),
+  semanticConflicts: z.array(semanticConflictSchema),
   mentionedDestinations: z.array(z.string()),
-  customConflictResolution: z
-    .strictObject({
-      conflictId: z.string(),
-      understood: z.boolean(),
-      summary: z.string(),
-      operations: z.array(profileOperationSchema),
-    })
-    .nullable(),
+  customConflictResolution: customConflictResolutionSchema.nullable(),
 });
+
+type ParsedTurnAnalysis = z.infer<typeof turnAnalysisSchema>;
+export type SemanticConflictProposal = z.infer<
+  typeof semanticConflictSchema
+>;
+export type CustomConflictResolution = z.infer<
+  typeof customConflictResolutionSchema
+>;
+export type TurnAnalysis = Omit<
+  ParsedTurnAnalysis,
+  "customConflictResolution"
+> & {
+  customConflictResolution?: CustomConflictResolution;
+};
 
 export const turnAnalysisResponseFormat = zodResponseFormat(
   turnAnalysisSchema,

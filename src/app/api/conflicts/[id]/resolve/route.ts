@@ -1,7 +1,7 @@
 import type {
   ApiError,
   ResolveConflictRequest,
-} from "@/lib/contracts";
+} from "@/lib/api-contracts";
 import { createModelClient } from "@/server/model-client";
 import {
   applyConflictDecision,

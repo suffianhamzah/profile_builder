@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createEmptyState } from "../lib/contracts";
+import { createEmptyState } from "../lib/domain";
 import {
   buildAnalyzerInstructions,
   buildResponderInstructions,

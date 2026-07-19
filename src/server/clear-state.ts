@@ -1,13 +1,13 @@
+import type { ClearStateRequest } from "../lib/api-contracts";
 import {
   createEmptyProfile,
-  type AppState,
-  type ClearStateRequest,
-} from "../lib/contracts";
+  type PersistedState,
+} from "../lib/domain";
 
 export function clearState(
-  state: AppState,
+  state: PersistedState,
   target: ClearStateRequest["target"],
-): AppState {
+): PersistedState {
   if (target === "conversation") {
     return { ...state, messages: [] };
   }

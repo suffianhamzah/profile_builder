@@ -1,16 +1,17 @@
 import {
-  type AppState,
+  type ConflictDecision,
   type ListProfileField,
+  type PersistedState,
   type ProfileConflict,
   type ProfileOperation,
-  type SemanticConflictProposal,
-  type TurnAnalysis,
-} from "../lib/contracts";
-
-type ConflictDecision = "accept" | "reject";
+} from "../lib/domain";
+import type {
+  SemanticConflictProposal,
+  TurnAnalysis,
+} from "./model-analysis";
 
 export function addDeterministicCustomResolution(
-  state: AppState,
+  state: PersistedState,
   analysis: TurnAnalysis,
   latestUserMessage: string,
   resolvingConflictId?: string,
@@ -50,10 +51,10 @@ export function addDeterministicCustomResolution(
 }
 
 export function applyTurnAnalysis(
-  state: AppState,
+  state: PersistedState,
   analysis: TurnAnalysis,
   resolvingConflictId?: string,
-): AppState {
+): PersistedState {
   let nextState = cloneState(state);
   const conflictedFields = new Set(
     analysis.semanticConflicts.map((conflict) => conflict.field),
@@ -73,10 +74,10 @@ export function applyTurnAnalysis(
 }
 
 export function resolveConflict(
-  state: AppState,
+  state: PersistedState,
   id: string,
   decision: ConflictDecision,
-): AppState {
+): PersistedState {
   const conflict = state.pendingConflicts.find((item) => item.id === id);
   if (!conflict) {
     throw new Error(`Conflict not found: ${id}`);
@@ -100,9 +101,9 @@ export function resolveConflict(
 }
 
 function applyGuardedOperation(
-  state: AppState,
+  state: PersistedState,
   operation: ProfileOperation,
-): AppState {
+): PersistedState {
   if (operation.kind === "set") {
     const currentValue = state.profile[operation.field];
     if (currentValue === operation.value) {
@@ -155,9 +156,9 @@ function applyGuardedOperation(
 }
 
 function queueSemanticConflict(
-  state: AppState,
+  state: PersistedState,
   proposal: SemanticConflictProposal,
-): AppState {
+): PersistedState {
   const proposedOperations = proposal.proposedOperations.filter(
     (operation) => operation.field === proposal.field,
   );
@@ -168,9 +169,9 @@ function queueSemanticConflict(
 }
 
 function queueConflict(
-  state: AppState,
+  state: PersistedState,
   proposal: Omit<ProfileConflict, "id" | "createdAt">,
-): AppState {
+): PersistedState {
   const alreadyPending = state.pendingConflicts.some(
     (conflict) =>
       conflict.field === proposal.field &&
@@ -195,10 +196,10 @@ function queueConflict(
 }
 
 function applyCustomResolution(
-  state: AppState,
+  state: PersistedState,
   analysis: TurnAnalysis,
   resolvingConflictId?: string,
-): AppState {
+): PersistedState {
   const resolution = analysis.customConflictResolution;
   if (
     !resolution?.understood ||
@@ -239,10 +240,10 @@ function applyCustomResolution(
 }
 
 function applyApprovedOperations(
-  state: AppState,
+  state: PersistedState,
   field: ProfileConflict["field"],
   operations: ProfileOperation[],
-): AppState {
+): PersistedState {
   if (operations.length === 0 || operations.some((op) => op.field !== field)) {
     throw new Error("Conflict operations must target the conflicted field");
   }
@@ -297,7 +298,7 @@ function containsAny(value: string, terms: string[]): boolean {
   return terms.some((term) => value.includes(term));
 }
 
-function cloneState(state: AppState): AppState {
+function cloneState(state: PersistedState): PersistedState {
   return {
     ...state,
     profile: {

@@ -1,18 +1,20 @@
 "use client";
 
 import { FormEvent, useEffect, useRef, useState } from "react";
-import {
-  AppState,
+import type {
   ChatEvent,
   ChatRequest,
   ClearStateRequest,
   ClearStateResponse,
-  Message,
-  ProfileConflict,
   ResolveConflictRequest,
+} from "@/lib/api-contracts";
+import { createEmptyProfile } from "@/lib/domain";
+import type {
+  ChatMessage,
+  PersistedState,
+  ProfileConflict,
   TravelProfile,
-  createEmptyProfile,
-} from "@/lib/contracts";
+} from "@/lib/domain";
 import { readChatEventStream } from "@/lib/sse-client";
 
 const fieldLabels: Record<keyof TravelProfile, string> = {
@@ -114,7 +116,7 @@ function ProfilePanel({ profile, disabled, clearing, onClear }: ProfilePanelProp
   );
 }
 
-function MessageBubble({ message }: { message: Message }) {
+function MessageBubble({ message }: { message: ChatMessage }) {
   return (
     <div className={`message-row ${message.role}`}>
       {message.role === "assistant" && <div className="assistant-avatar" aria-hidden="true">A</div>}
@@ -192,7 +194,7 @@ function ConflictPanel({ conflict, disabled, onDecision, onCustomAnswer }: Confl
 
 export default function Home() {
   const [profile, setProfile] = useState<TravelProfile>(createEmptyProfile());
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [pendingConflicts, setPendingConflicts] = useState<ProfileConflict[]>([]);
   const [draft, setDraft] = useState("");
   const [streamingText, setStreamingText] = useState("");
@@ -210,7 +212,7 @@ export default function Home() {
       try {
         const response = await fetch("/api/state", { signal: controller.signal });
         if (!response.ok) throw new Error(`Could not load your profile (${response.status}).`);
-        const state = (await response.json()) as AppState;
+        const state = (await response.json()) as PersistedState;
         setProfile(state.profile);
         setMessages(state.messages);
         setPendingConflicts(state.pendingConflicts);
@@ -259,7 +261,7 @@ export default function Home() {
     const trimmed = message.trim();
     if (!trimmed || sending || resolving) return;
 
-    const optimisticMessage: Message = {
+    const optimisticMessage: ChatMessage = {
       id: `local-${crypto.randomUUID()}`,
       role: "user",
       content: trimmed,

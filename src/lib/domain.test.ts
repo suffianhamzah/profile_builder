@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createEmptyState } from "./contracts";
+import { createEmptyState } from "./domain";
 
 describe("createEmptyState", () => {
   it("creates isolated empty profile collections", () => {

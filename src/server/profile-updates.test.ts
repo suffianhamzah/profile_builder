@@ -2,9 +2,9 @@ import { describe, expect, it } from "vitest";
 
 import {
   createEmptyState,
-  type AppState,
-  type TurnAnalysis,
-} from "../lib/contracts";
+  type PersistedState,
+} from "../lib/domain";
+import type { TurnAnalysis } from "./model-analysis";
 import {
   addDeterministicCustomResolution,
   applyTurnAnalysis,
@@ -17,7 +17,7 @@ const emptyAnalysis = (): TurnAnalysis => ({
   mentionedDestinations: [],
 });
 
-function stateWithBudget(): AppState {
+function stateWithBudget(): PersistedState {
   const state = createEmptyState();
   return {
     ...state,

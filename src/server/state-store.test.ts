@@ -4,7 +4,7 @@ import path from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
-import { createEmptyState, type AppState } from "../lib/contracts";
+import { createEmptyState, type PersistedState } from "../lib/domain";
 import { JsonStateStore } from "./state-store";
 
 const temporaryDirectories: string[] = [];
@@ -35,7 +35,7 @@ describe("JsonStateStore", () => {
 
   it("round-trips application state", async () => {
     const { filePath, store } = await makeStore();
-    const state: AppState = {
+    const state: PersistedState = {
       ...createEmptyState(),
       profile: {
         ...createEmptyState().profile,

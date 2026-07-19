@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { createEmptyState, type AppState } from "../lib/contracts";
+import { createEmptyState, type PersistedState } from "../lib/domain";
 import type {
   ModelClient,
   RespondToTurnInput,
@@ -13,7 +13,7 @@ import type { StateStore } from "./state-store";
 
 describe("conflict resolution response", () => {
   it("applies the human choice and streams a responder-only confirmation", async () => {
-    let savedState: AppState = {
+    let savedState: PersistedState = {
       ...createEmptyState(),
       profile: { ...createEmptyState().profile, travelPace: "relaxed" },
       pendingConflicts: [

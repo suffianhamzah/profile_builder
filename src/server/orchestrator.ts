@@ -1,13 +1,17 @@
 import {
-  type AppState,
   type ChatEvent,
   type ChatRequest,
+} from "../lib/api-contracts";
+import type {
+  ChatMessage,
+  ConflictDecision,
+  PersistedState,
+  ProfileConflict,
+} from "../lib/domain";
+import {
+  getDestinationInfo,
   type DestinationLookupResult,
-  type Message,
-  type ProfileConflict,
-  type ResolveConflictRequest,
-} from "../lib/contracts";
-import { getDestinationInfo } from "./destinations";
+} from "./destinations";
 import type { ModelClient } from "./model-client";
 import {
   addDeterministicCustomResolution,
@@ -22,10 +26,10 @@ export type ChatTurnDependencies = {
 };
 
 export type ResolvedConflictTurn = {
-  state: AppState;
-  userMessage: Message;
+  state: PersistedState;
+  userMessage: ChatMessage;
   resolution: {
-    decision: ResolveConflictRequest["decision"];
+    decision: ConflictDecision;
     field: ProfileConflict["field"];
     existingValue: string;
     proposedValue: string;
@@ -90,7 +94,7 @@ export async function* runChatTurn(
 
 export async function applyConflictDecision(
   id: string,
-  decision: ResolveConflictRequest["decision"],
+  decision: ConflictDecision,
   store: StateStore,
 ): Promise<ResolvedConflictTurn> {
   const currentState = await store.load();
@@ -146,7 +150,7 @@ export async function* runConflictResolutionResponse(
 }
 
 async function* streamAndPersistResponse(
-  state: AppState,
+  state: PersistedState,
   input: Parameters<ModelClient["streamResponse"]>[0],
   dependencies: ChatTurnDependencies,
 ): AsyncGenerator<ChatEvent> {
@@ -187,7 +191,10 @@ async function lookupDestinations(
   );
 }
 
-function createMessage(role: Message["role"], content: string): Message {
+function createMessage(
+  role: ChatMessage["role"],
+  content: string,
+): ChatMessage {
   return {
     id: crypto.randomUUID(),
     role,

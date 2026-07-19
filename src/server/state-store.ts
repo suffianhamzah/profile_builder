@@ -1,11 +1,11 @@
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
 
-import { createEmptyState, type AppState } from "../lib/contracts";
+import { createEmptyState, type PersistedState } from "../lib/domain";
 
 export interface StateStore {
-  load(): Promise<AppState>;
-  save(state: AppState): Promise<void>;
+  load(): Promise<PersistedState>;
+  save(state: PersistedState): Promise<void>;
 }
 
 const defaultStateFilePath = path.join(process.cwd(), "data", "state.json");
@@ -16,10 +16,10 @@ export class JsonStateStore implements StateStore {
       process.env.STATE_FILE_PATH?.trim() || defaultStateFilePath,
   ) {}
 
-  async load(): Promise<AppState> {
+  async load(): Promise<PersistedState> {
     try {
       const contents = await readFile(this.filePath, "utf8");
-      return JSON.parse(contents) as AppState;
+      return JSON.parse(contents) as PersistedState;
     } catch (error) {
       if (isMissingFileError(error)) {
         return createEmptyState();
@@ -28,7 +28,7 @@ export class JsonStateStore implements StateStore {
     }
   }
 
-  async save(state: AppState): Promise<void> {
+  async save(state: PersistedState): Promise<void> {
     const directory = path.dirname(this.filePath);
     await mkdir(directory, { recursive: true });
 

@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
-import type { ApiError, AppState } from "@/lib/contracts";
+import type { ApiError } from "@/lib/api-contracts";
+import type { PersistedState } from "@/lib/domain";
 import { stateStore } from "@/server/state-store";
 
 export const runtime = "nodejs";
 
-export async function GET(): Promise<NextResponse<AppState | ApiError>> {
+export async function GET(): Promise<NextResponse<PersistedState | ApiError>> {
   try {
     return NextResponse.json(await stateStore.load());
   } catch (error) {
