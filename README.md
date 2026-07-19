@@ -29,6 +29,22 @@ make dev
 
 Open [http://localhost:3000](http://localhost:3000). Never prefix the API key with `NEXT_PUBLIC_`; model calls run only on the server.
 
+## Clear local data
+
+In the UI, use **Clear conversation** above the chat to remove saved messages while keeping the travel profile, or **Clear profile** above the profile panel to reset profile fields and pending conflicts while keeping the conversation. Both actions ask for confirmation.
+
+To clear the entire local store from the command line, stop the app and run:
+
+```bash
+make clear-store
+```
+
+This deletes `./data/state.json`; Atlas creates fresh empty state the next time it starts. If `STATE_FILE_PATH` points somewhere else, pass the same path to Make:
+
+```bash
+make clear-store STATE_FILE_PATH=./path/to/state.json
+```
+
 ## Verify
 
 ```bash
