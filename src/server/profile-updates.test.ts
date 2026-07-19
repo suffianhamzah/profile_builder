@@ -6,9 +6,10 @@ import {
 } from "../lib/domain";
 import type { TurnAnalysis } from "./model-analysis";
 import {
-  addDeterministicCustomResolution,
   applyTurnAnalysis,
+  ConflictNotFoundError,
   resolveConflict,
+  withExplicitConflictResolution,
 } from "./profile-updates";
 
 const emptyAnalysis = (): TurnAnalysis => ({
@@ -247,14 +248,14 @@ describe("semantic conflict application", () => {
   });
 });
 
-describe("addDeterministicCustomResolution", () => {
+describe("withExplicitConflictResolution", () => {
   it("binds an explicit replacement to the stored pending proposal", () => {
     const pending = applyTurnAnalysis(stateWithBudget(), {
       ...emptyAnalysis(),
       operations: [{ kind: "set", field: "budgetStyle", value: "luxury" }],
     });
     const conflict = pending.pendingConflicts[0];
-    const guarded = addDeterministicCustomResolution(
+    const guarded = withExplicitConflictResolution(
       pending,
       emptyAnalysis(),
       "Please replace my current value with luxury.",
@@ -272,7 +273,7 @@ describe("addDeterministicCustomResolution", () => {
       operations: [{ kind: "set", field: "budgetStyle", value: "luxury" }],
     });
     const conflict = pending.pendingConflicts[0];
-    const guarded = addDeterministicCustomResolution(
+    const guarded = withExplicitConflictResolution(
       pending,
       emptyAnalysis(),
       "Something in the middle.",
@@ -317,8 +318,8 @@ describe("resolveConflict", () => {
   });
 
   it("throws for an unknown conflict ID", () => {
-    expect(() => resolveConflict(createEmptyState(), "missing", "accept")).toThrow(
-      "Conflict not found: missing",
-    );
+    expect(() =>
+      resolveConflict(createEmptyState(), "missing", "accept"),
+    ).toThrow(ConflictNotFoundError);
   });
 });

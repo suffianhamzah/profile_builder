@@ -7,6 +7,7 @@ import {
   applyConflictDecision,
   runConflictResolutionResponse,
 } from "@/server/orchestrator";
+import { ConflictNotFoundError } from "@/server/profile-updates";
 import { encodeSseEvent } from "@/server/sse";
 import { stateStore } from "@/server/state-store";
 
@@ -54,7 +55,7 @@ export async function POST(
     const { id } = await context.params;
     turn = await applyConflictDecision(id, body.decision, stateStore);
   } catch (error) {
-    if (error instanceof Error && error.message.startsWith("Conflict not found")) {
+    if (error instanceof ConflictNotFoundError) {
       return Response.json({ error: error.message } satisfies ApiError, {
         status: 404,
       });

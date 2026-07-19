@@ -14,9 +14,10 @@ import {
 } from "./destinations";
 import type { ModelClient } from "./model-client";
 import {
-  addDeterministicCustomResolution,
   applyTurnAnalysis,
+  requirePendingConflict,
   resolveConflict,
+  withExplicitConflictResolution,
 } from "./profile-updates";
 import type { StateStore } from "./state-store";
 
@@ -51,7 +52,7 @@ export async function* runChatTurn(
       resolvingConflictId: request.resolvingConflictId,
     });
     const analysis = request.resolvingConflictId
-      ? addDeterministicCustomResolution(
+      ? withExplicitConflictResolution(
           state,
           modelAnalysis,
           request.message,
@@ -98,10 +99,7 @@ export async function applyConflictDecision(
   store: StateStore,
 ): Promise<ResolvedConflictTurn> {
   const currentState = await store.load();
-  const conflict = currentState.pendingConflicts.find((item) => item.id === id);
-  if (!conflict) {
-    throw new Error(`Conflict not found: ${id}`);
-  }
+  const conflict = requirePendingConflict(currentState, id);
 
   const userMessage = createMessage(
     "user",

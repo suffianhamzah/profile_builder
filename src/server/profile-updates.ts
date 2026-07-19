@@ -10,7 +10,25 @@ import type {
   TurnAnalysis,
 } from "./model-analysis";
 
-export function addDeterministicCustomResolution(
+export class ConflictNotFoundError extends Error {
+  constructor(id: string) {
+    super(`Conflict not found: ${id}`);
+    this.name = "ConflictNotFoundError";
+  }
+}
+
+export function requirePendingConflict(
+  state: PersistedState,
+  id: string,
+): ProfileConflict {
+  const conflict = state.pendingConflicts.find((item) => item.id === id);
+  if (!conflict) {
+    throw new ConflictNotFoundError(id);
+  }
+  return conflict;
+}
+
+export function withExplicitConflictResolution(
   state: PersistedState,
   analysis: TurnAnalysis,
   latestUserMessage: string,
@@ -55,7 +73,7 @@ export function applyTurnAnalysis(
   analysis: TurnAnalysis,
   resolvingConflictId?: string,
 ): PersistedState {
-  let nextState = cloneState(state);
+  let nextState = state;
   const conflictedFields = new Set(
     analysis.semanticConflicts.map((conflict) => conflict.field),
   );
@@ -70,7 +88,11 @@ export function applyTurnAnalysis(
     nextState = queueSemanticConflict(nextState, proposal);
   }
 
-  return applyCustomResolution(nextState, analysis, resolvingConflictId);
+  return applyAnalyzedConflictResolution(
+    nextState,
+    analysis,
+    resolvingConflictId,
+  );
 }
 
 export function resolveConflict(
@@ -78,14 +100,11 @@ export function resolveConflict(
   id: string,
   decision: ConflictDecision,
 ): PersistedState {
-  const conflict = state.pendingConflicts.find((item) => item.id === id);
-  if (!conflict) {
-    throw new Error(`Conflict not found: ${id}`);
-  }
+  const conflict = requirePendingConflict(state, id);
 
-  let nextState = cloneState(state);
+  let nextState = state;
   if (decision === "accept") {
-    nextState = applyApprovedOperations(
+    nextState = applyConflictOperations(
       nextState,
       conflict.field,
       conflict.proposedOperations,
@@ -195,7 +214,7 @@ function queueConflict(
   };
 }
 
-function applyCustomResolution(
+function applyAnalyzedConflictResolution(
   state: PersistedState,
   analysis: TurnAnalysis,
   resolvingConflictId?: string,
@@ -226,7 +245,7 @@ function applyCustomResolution(
     return state;
   }
 
-  const nextState = applyApprovedOperations(
+  const nextState = applyConflictOperations(
     state,
     conflict.field,
     resolution.operations,
@@ -239,7 +258,7 @@ function applyCustomResolution(
   };
 }
 
-function applyApprovedOperations(
+function applyConflictOperations(
   state: PersistedState,
   field: ProfileConflict["field"],
   operations: ProfileOperation[],
@@ -296,25 +315,4 @@ function normalize(value: string): string {
 
 function containsAny(value: string, terms: string[]): boolean {
   return terms.some((term) => value.includes(term));
-}
-
-function cloneState(state: PersistedState): PersistedState {
-  return {
-    ...state,
-    profile: {
-      ...state.profile,
-      wishlist: [...state.profile.wishlist],
-      visitedDestinations: [...state.profile.visitedDestinations],
-      interests: [...state.profile.interests],
-      preferredSeasons: [...state.profile.preferredSeasons],
-      dietaryPreferences: [...state.profile.dietaryPreferences],
-      accommodationPreferences: [...state.profile.accommodationPreferences],
-      additionalPreferences: [...state.profile.additionalPreferences],
-    },
-    messages: [...state.messages],
-    pendingConflicts: state.pendingConflicts.map((conflict) => ({
-      ...conflict,
-      proposedOperations: [...conflict.proposedOperations],
-    })),
-  };
 }
