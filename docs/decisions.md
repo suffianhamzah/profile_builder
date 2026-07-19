@@ -162,6 +162,8 @@ type ChatEvent =
 
 Request, response, and event contracts live in `src/lib/api-contracts.ts`, imported by both server routes and React components. Their durable payload types come from `src/lib/domain.ts`.
 
+Both streaming routes use the same server-side SSE response builder, and both browser actions use the same incremental SSE parser. This keeps framing, headers, stream errors, and chunk-boundary behavior consistent.
+
 **Event order:**
 
 1. Analyze the user turn and execute deterministic profile and destination operations.

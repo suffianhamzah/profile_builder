@@ -1,7 +1,7 @@
 import type { ApiError, ChatRequest } from "@/lib/api-contracts";
 import { createModelClient } from "@/server/model-client";
 import { runChatTurn } from "@/server/orchestrator";
-import { encodeSseEvent } from "@/server/sse";
+import { createSseResponse } from "@/server/sse";
 import { stateStore } from "@/server/state-store";
 
 export const runtime = "nodejs";
@@ -52,40 +52,13 @@ export async function POST(request: Request): Promise<Response> {
     );
   }
 
-  const encoder = new TextEncoder();
-  const stream = new ReadableStream<Uint8Array>({
-    async start(controller) {
-      try {
-        for await (const event of runChatTurn(
-          { message, resolvingConflictId: body.resolvingConflictId },
-          { modelClient, store: stateStore },
-        )) {
-          controller.enqueue(encoder.encode(encodeSseEvent(event)));
-        }
-      } catch (error) {
-        controller.enqueue(
-          encoder.encode(
-            encodeSseEvent({
-              type: "error",
-              message:
-                error instanceof Error
-                  ? error.message
-                  : "Atlas could not start that turn.",
-            }),
-          ),
-        );
-      } finally {
-        controller.close();
-      }
+  return createSseResponse(
+    runChatTurn(
+      { message, resolvingConflictId: body.resolvingConflictId },
+      { modelClient, store: stateStore },
+    ),
+    {
+      fallbackErrorMessage: "Atlas could not start that turn.",
     },
-  });
-
-  return new Response(stream, {
-    headers: {
-      "Cache-Control": "no-cache, no-transform",
-      Connection: "keep-alive",
-      "Content-Type": "text/event-stream; charset=utf-8",
-      "X-Accel-Buffering": "no",
-    },
-  });
+  );
 }

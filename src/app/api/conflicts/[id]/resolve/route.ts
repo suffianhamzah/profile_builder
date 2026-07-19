@@ -8,7 +8,7 @@ import {
   runConflictResolutionResponse,
 } from "@/server/orchestrator";
 import { ConflictNotFoundError } from "@/server/profile-updates";
-import { encodeSseEvent } from "@/server/sse";
+import { createSseResponse } from "@/server/sse";
 import { stateStore } from "@/server/state-store";
 
 export const runtime = "nodejs";
@@ -68,41 +68,14 @@ export async function POST(
     );
   }
 
-  const encoder = new TextEncoder();
-  const stream = new ReadableStream<Uint8Array>({
-    async start(controller) {
-      try {
-        for await (const event of runConflictResolutionResponse(turn, {
-          modelClient,
-          store: stateStore,
-        })) {
-          controller.enqueue(encoder.encode(encodeSseEvent(event)));
-        }
-      } catch (error) {
-        console.error("Conflict response failed", error);
-        controller.enqueue(
-          encoder.encode(
-            encodeSseEvent({
-              type: "error",
-              message:
-                error instanceof Error
-                  ? error.message
-                  : "Atlas could not confirm that choice.",
-            }),
-          ),
-        );
-      } finally {
-        controller.close();
-      }
+  return createSseResponse(
+    runConflictResolutionResponse(turn, {
+      modelClient,
+      store: stateStore,
+    }),
+    {
+      fallbackErrorMessage: "Atlas could not confirm that choice.",
+      onError: (error) => console.error("Conflict response failed", error),
     },
-  });
-
-  return new Response(stream, {
-    headers: {
-      "Cache-Control": "no-cache, no-transform",
-      Connection: "keep-alive",
-      "Content-Type": "text/event-stream; charset=utf-8",
-      "X-Accel-Buffering": "no",
-    },
-  });
+  );
 }
