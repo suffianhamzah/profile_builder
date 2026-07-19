@@ -129,26 +129,9 @@ type ConflictPanelProps = {
   conflict: ProfileConflict;
   disabled: boolean;
   onDecision: (decision: ResolveConflictRequest["decision"]) => Promise<void>;
-  onCustomAnswer: (answer: string) => Promise<void>;
 };
 
-function ConflictPanel({ conflict, disabled, onDecision, onCustomAnswer }: ConflictPanelProps) {
-  const [showCustom, setShowCustom] = useState(false);
-  const [answer, setAnswer] = useState("");
-
-  useEffect(() => {
-    setShowCustom(false);
-    setAnswer("");
-  }, [conflict.id]);
-
-  function submitCustom(event: FormEvent) {
-    event.preventDefault();
-    const trimmed = answer.trim();
-    if (!trimmed || disabled) return;
-    setAnswer("");
-    void onCustomAnswer(trimmed);
-  }
-
+function ConflictPanel({ conflict, disabled, onDecision }: ConflictPanelProps) {
   return (
     <section className="conflict-panel" aria-labelledby="conflict-title">
       <div className="conflict-icon" aria-hidden="true">?</div>
@@ -167,26 +150,10 @@ function ConflictPanel({ conflict, disabled, onDecision, onCustomAnswer }: Confl
           <button type="button" className="secondary-button" disabled={disabled} onClick={() => void onDecision("reject")}>
             Keep current
           </button>
-          <button type="button" className="text-button" disabled={disabled} onClick={() => setShowCustom((open) => !open)}>
-            Give another answer
-          </button>
         </div>
-        {showCustom && (
-          <form className="custom-answer" onSubmit={submitCustom}>
-            <label htmlFor="conflict-answer">Tell Atlas what to remember instead</label>
-            <div>
-              <input
-                id="conflict-answer"
-                value={answer}
-                onChange={(event) => setAnswer(event.target.value)}
-                placeholder="For example, mostly vegetarian but flexible…"
-                disabled={disabled}
-                autoFocus
-              />
-              <button type="submit" disabled={disabled || !answer.trim()}>Send</button>
-            </div>
-          </form>
-        )}
+        <p className="conflict-reason">
+          Or type a different answer in the message box below.
+        </p>
       </div>
     </section>
   );
@@ -257,9 +224,10 @@ export default function Home() {
     }
   }
 
-  async function sendMessage(message: string, resolvingConflictId?: string) {
+  async function sendMessage(message: string) {
     const trimmed = message.trim();
     if (!trimmed || sending || resolving) return;
+    const resolvingConflictId = pendingConflicts[0]?.id;
 
     const optimisticMessage: ChatMessage = {
       id: `local-${crypto.randomUUID()}`,
@@ -389,7 +357,7 @@ export default function Home() {
                 <p>Tell me about a favorite trip, somewhere on your wishlist, or how you like to travel.</p>
                 <div className="starter-prompts" aria-label="Conversation starters">
                   {["I love slow trips centered around food", "Tokyo is at the top of my wishlist"].map((prompt) => (
-                    <button key={prompt} type="button" disabled={busy} onClick={() => void sendMessage(prompt)}>{prompt}</button>
+                    <button key={prompt} type="button" disabled={busy || Boolean(activeConflict)} onClick={() => void sendMessage(prompt)}>{prompt}</button>
                   ))}
                 </div>
               </div>
@@ -416,7 +384,6 @@ export default function Home() {
                 conflict={activeConflict}
                 disabled={busy}
                 onDecision={resolveConflict}
-                onCustomAnswer={(answer) => sendMessage(answer, activeConflict.id)}
               />
             )}
 
@@ -428,7 +395,9 @@ export default function Home() {
             )}
 
             <form className="composer" onSubmit={submitChat}>
-              <label htmlFor="message">Message Atlas</label>
+              <label htmlFor="message">
+                {activeConflict ? "Answer this clarification" : "Message Atlas"}
+              </label>
               <textarea
                 id="message"
                 rows={2}
@@ -440,14 +409,20 @@ export default function Home() {
                     event.currentTarget.form?.requestSubmit();
                   }
                 }}
-                placeholder="Share a destination or travel preference…"
+                placeholder={activeConflict
+                  ? "Type a different answer for this preference…"
+                  : "Share a destination or travel preference…"}
                 disabled={loadingState || busy}
               />
               <button className="send-button" type="submit" disabled={loadingState || busy || !draft.trim()} aria-label="Send message">
                 {sending ? <span className="spinner light" /> : <span aria-hidden="true">↑</span>}
               </button>
             </form>
-            <p className="composer-hint">Enter to send · Shift + Enter for a new line</p>
+            <p className="composer-hint">
+              {activeConflict
+                ? "Your answer will resolve the clarification above"
+                : "Enter to send · Shift + Enter for a new line"}
+            </p>
           </div>
         </section>
 

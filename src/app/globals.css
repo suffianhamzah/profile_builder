@@ -181,17 +181,10 @@ button { color: inherit; }
 .comparison span { display: block; color: #89795f; font-size: 10px; text-transform: uppercase; letter-spacing: .06em; }
 .comparison strong { display: block; margin-top: 3px; overflow-wrap: anywhere; font-size: 12px; }
 .conflict-actions { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 12px; }
-.conflict-actions button, .custom-answer button { min-height: 32px; padding: 0 11px; border-radius: 8px; cursor: pointer; font-size: 11px; font-weight: 700; }
+.conflict-actions button { min-height: 32px; padding: 0 11px; border-radius: 8px; cursor: pointer; font-size: 11px; font-weight: 700; }
 .primary-button { border: 1px solid var(--forest); background: var(--forest); color: white; }
 .secondary-button { border: 1px solid #cfc4ad; background: white; }
-.text-button { border: 0; background: transparent; color: var(--forest); }
-.conflict-actions button:disabled, .custom-answer button:disabled { opacity: .5; cursor: not-allowed; }
-.custom-answer { margin-top: 12px; }
-.custom-answer label { display: block; margin-bottom: 6px; color: #705d40; font-size: 11px; }
-.custom-answer > div { display: flex; gap: 6px; }
-.custom-answer input { min-width: 0; flex: 1; padding: 8px 10px; border: 1px solid #d8caaa; border-radius: 8px; outline: 0; background: white; font-size: 12px; }
-.custom-answer input:focus { border-color: var(--amber); }
-.custom-answer button { border: 0; background: var(--forest); color: white; }
+.conflict-actions button:disabled { opacity: .5; cursor: not-allowed; }
 
 .error-banner { display: flex; justify-content: space-between; gap: 12px; margin: 0 0 10px; padding: 10px 12px; color: #8f302d; background: #fff0ee; border: 1px solid #f1cbc6; border-radius: 9px; font-size: 12px; }
 .error-banner button { border: 0; background: transparent; cursor: pointer; color: inherit; font-size: 17px; line-height: 1; }
