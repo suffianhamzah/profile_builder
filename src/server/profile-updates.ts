@@ -184,7 +184,18 @@ function queueSemanticConflict(
   if (proposedOperations.length === 0) {
     return state;
   }
+  if (!hasStoredValue(state, proposal.field)) {
+    return proposedOperations.reduce(applyGuardedOperation, state);
+  }
   return queueConflict(state, { ...proposal, proposedOperations });
+}
+
+function hasStoredValue(
+  state: PersistedState,
+  field: ProfileConflict["field"],
+): boolean {
+  const value = state.profile[field];
+  return Array.isArray(value) ? value.length > 0 : value !== undefined;
 }
 
 function queueConflict(

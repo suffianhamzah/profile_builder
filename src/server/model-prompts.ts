@@ -76,6 +76,7 @@ ANALYSIS PROCEDURE
    - compatible: genuinely new information that can coexist with the current field; put it in operations.
    - conflict: a replacement, correction, withdrawal, or likely incompatibility; put it in semanticConflicts and do not put any operation for that field in operations.
 4. If compatibility is genuinely uncertain, prefer a semantic conflict so the user can decide. Do not invent a conflict merely because two different list values are present.
+5. A field with no saved value cannot conflict. Put its new value in operations, never semanticConflicts.
 
 CONFLICT OUTPUT RULES
 - existingValue must quote or summarize the relevant value currently stored in that field.

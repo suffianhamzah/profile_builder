@@ -186,6 +186,8 @@ When a turn creates a conflict, the server also skips the general responder call
 
 When a typed custom answer resolves the conflict, the responder receives explicit transient context identifying it as a completed custom resolution. This lets it acknowledge the newly applied profile value without mistaking the post-update snapshot for a value that was already present.
 
+A semantic conflict is valid only when that profile field already contains a saved value. If the analyzer incorrectly reports a conflict against an empty field, the application deterministically applies the proposal's same-field operations as a normal first value instead of asking for unnecessary confirmation.
+
 The panel displays the affected field, current value, proposed value, and short reason, with three response paths:
 
 - **Use proposed value:** Apply the proposed change and remove the conflict.

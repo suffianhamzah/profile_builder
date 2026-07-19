@@ -170,6 +170,26 @@ describe("applyTurnAnalysis", () => {
 });
 
 describe("semantic conflict application", () => {
+  it("applies a proposed value instead of conflicting with an empty field", () => {
+    const result = applyTurnAnalysis(createEmptyState(), {
+      ...emptyAnalysis(),
+      semanticConflicts: [
+        {
+          field: "travelPace",
+          existingValue: "Not set",
+          proposedValue: "packed",
+          reason: "The analyzer incorrectly treated an empty field as a conflict.",
+          proposedOperations: [
+            { kind: "set", field: "travelPace", value: "packed" },
+          ],
+        },
+      ],
+    });
+
+    expect(result.profile.travelPace).toBe("packed");
+    expect(result.pendingConflicts).toEqual([]);
+  });
+
   it("blocks every normal operation for a field with a semantic conflict", () => {
     const state = createEmptyState();
     state.profile.accommodationPreferences = ["quiet boutique hotels"];

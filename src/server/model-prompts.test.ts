@@ -18,6 +18,7 @@ describe("buildAnalyzerInstructions", () => {
     expect(prompt).toContain("budgetStyle");
     expect(prompt).toContain("preferred season");
     expect(prompt).toContain("dietary preference");
+    expect(prompt).toContain("A field with no saved value cannot conflict");
   });
 
   it("asks the model to analyze only the latest user message", () => {
