@@ -26,6 +26,7 @@ Updated as implementation progresses. Status values are `pending`, `in progress`
 - [x] **complete** — Implement and validate strict structured analyzer output.
 - [x] **complete** — Implement destination enrichment for detected names.
 - [x] **complete** — Implement the responder with recent messages, profile, conflicts, and tool results.
+- [x] **complete** — Guide the responder to collect one high-value missing profile detail at a time.
 - [x] **complete** — Implement the two-stage turn orchestration.
 - [x] **complete** — Implement and test SSE framing.
 - [x] **complete** — Implement the streamed chat route.

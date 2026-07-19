@@ -267,6 +267,14 @@ The `ModelClient.streamResponse` boundary is the extension seam. An Agents SDK i
 
 **Progress policy:** Update the task list at workstream boundaries and after verification. Ask for clarification only when a missing choice would materially change agreed behavior or require additional authority.
 
+### D16. Collect profile detail through one focused follow-up
+
+**Decision:** The responder should normally end with at most one short, easy-to-answer follow-up. Pending conflict resolution takes precedence over collecting new information. Otherwise, it should ask for the highest-value missing detail in this order: destination, interests, travel pace, budget style, accommodation, then season. Dietary preferences should only be requested when food or dining is already relevant.
+
+The responder must not list missing fields, repeat a recently asked question, or force a follow-up when the profile is already sufficient for the current conversation.
+
+**Reasoning:** Progressive collection keeps the conversation useful without making profile setup feel like a form. A stable priority gives the model a clear call to action while preserving room for a natural, destination-aware question.
+
 ## Open decisions
 
 No blocking product or architecture decisions remain for the initial build.
