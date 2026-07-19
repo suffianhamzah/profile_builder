@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
+import type { ChatEvent } from "../lib/api-contracts";
 import { createEmptyState, type PersistedState } from "../lib/domain";
 import type {
   ModelClient,
@@ -7,6 +8,7 @@ import type {
 } from "./model-client";
 import {
   applyConflictDecision,
+  runChatTurn,
   runConflictResolutionResponse,
 } from "./orchestrator";
 import type { StateStore } from "./state-store";
@@ -85,3 +87,120 @@ describe("conflict resolution response", () => {
     );
   });
 });
+
+describe("typed conflict clarification", () => {
+  it("keeps an unclear answer pending without asking the responder to invent an update", async () => {
+    let savedState: PersistedState = stateWithPendingPaceConflict();
+    const store: StateStore = {
+      async load() {
+        return savedState;
+      },
+      async save(state) {
+        savedState = state;
+      },
+    };
+    const streamResponse = vi.fn(async function* () {
+      yield "This should not be used.";
+    });
+    const modelClient: ModelClient = {
+      async analyzeTurn() {
+        return {
+          operations: [],
+          semanticConflicts: [],
+          mentionedDestinations: [],
+          customConflictResolution: {
+            conflictId: "conflict-1",
+            understood: false,
+            summary: "The answer was unclear.",
+            operations: [],
+          },
+        };
+      },
+      streamResponse,
+    };
+
+    const events: ChatEvent[] = [];
+    for await (const event of runChatTurn(
+      { message: "something else", resolvingConflictId: "conflict-1" },
+      { modelClient, store },
+    )) {
+      events.push(event);
+    }
+
+    expect(streamResponse).not.toHaveBeenCalled();
+    expect(savedState.profile.travelPace).toBe("relaxed");
+    expect(savedState.pendingConflicts).toHaveLength(1);
+    expect(events.find((event) => event.type === "assistant.delta")).toEqual({
+      type: "assistant.delta",
+      text: "I couldn't tell which preference you want me to remember. Please choose the current value, the proposed value, or give me a more specific answer.",
+    });
+  });
+
+  it("emits the updated profile when a custom answer resolves the conflict", async () => {
+    let savedState: PersistedState = stateWithPendingPaceConflict();
+    const store: StateStore = {
+      async load() {
+        return savedState;
+      },
+      async save(state) {
+        savedState = state;
+      },
+    };
+    const modelClient: ModelClient = {
+      async analyzeTurn() {
+        return {
+          operations: [],
+          semanticConflicts: [],
+          mentionedDestinations: [],
+          customConflictResolution: {
+            conflictId: "conflict-1",
+            understood: true,
+            summary: "Use a balanced pace instead.",
+            operations: [
+              { kind: "set", field: "travelPace", value: "balanced" },
+            ],
+          },
+        };
+      },
+      async *streamResponse() {
+        yield "Balanced pace saved.";
+      },
+    };
+
+    const events: ChatEvent[] = [];
+    for await (const event of runChatTurn(
+      { message: "balanced", resolvingConflictId: "conflict-1" },
+      { modelClient, store },
+    )) {
+      events.push(event);
+    }
+
+    const stateEvent = events.find((event) => event.type === "state.updated");
+    expect(stateEvent).toMatchObject({
+      type: "state.updated",
+      profile: { travelPace: "balanced" },
+      pendingConflicts: [],
+    });
+    expect(savedState.profile.travelPace).toBe("balanced");
+  });
+});
+
+function stateWithPendingPaceConflict(): PersistedState {
+  return {
+    ...createEmptyState(),
+    profile: { ...createEmptyState().profile, travelPace: "relaxed" },
+    pendingConflicts: [
+      {
+        id: "conflict-1",
+        field: "travelPace",
+        existingValue: "relaxed",
+        proposedValue: "packed",
+        reason: "The pace changed.",
+        proposedOperations: [
+          { kind: "set", field: "travelPace", value: "packed" },
+        ],
+        createdAt: "2026-07-19T12:00:00.000Z",
+      },
+    ],
+  };
+}

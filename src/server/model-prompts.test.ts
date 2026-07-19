@@ -68,6 +68,7 @@ describe("buildResponderInstructions", () => {
     expect(prompt).toContain("highest-priority useful detail");
     expect(prompt).toContain("Never list several missing fields");
     expect(prompt).toContain("Do not repeat a question");
+    expect(prompt).toContain("Never say that a value was noted, saved");
   });
 
   it("makes conflict resolution the only call to action when one is pending", () => {

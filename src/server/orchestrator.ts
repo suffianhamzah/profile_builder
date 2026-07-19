@@ -76,6 +76,20 @@ export async function* runChatTurn(
       pendingConflicts: state.pendingConflicts,
     };
 
+    const targetedConflictIsStillPending =
+      request.resolvingConflictId !== undefined &&
+      state.pendingConflicts.some(
+        (conflict) => conflict.id === request.resolvingConflictId,
+      );
+    if (targetedConflictIsStillPending) {
+      yield* persistAssistantText(
+        state,
+        "I couldn't tell which preference you want me to remember. Please choose the current value, the proposed value, or give me a more specific answer.",
+        dependencies.store,
+      );
+      return;
+    }
+
     yield* streamAndPersistResponse(
       state,
       { state, destinationResults },
@@ -160,6 +174,20 @@ async function* streamAndPersistResponse(
 
   const assistantMessage = createMessage("assistant", assistantText);
   await dependencies.store.save({
+    ...state,
+    messages: [...state.messages, assistantMessage],
+  });
+  yield { type: "turn.completed", assistantMessage };
+}
+
+async function* persistAssistantText(
+  state: PersistedState,
+  text: string,
+  store: StateStore,
+): AsyncGenerator<ChatEvent> {
+  yield { type: "assistant.delta", text };
+  const assistantMessage = createMessage("assistant", text);
+  await store.save({
     ...state,
     messages: [...state.messages, assistantMessage],
   });

@@ -180,6 +180,8 @@ Both streaming routes use the same server-side SSE response builder, and both br
 
 **Decision:** Persist every pending conflict, but show only the oldest unresolved conflict in a Codex-style inline clarification panel near the chat composer. After it is resolved, show the next pending conflict.
 
+While a clarification is visible, the main message composer becomes the single place to provide a custom answer and automatically targets that conflict. The application disables unrelated starter actions and does not render a second input inside the clarification panel. If the analyzer cannot apply the answer, the server keeps the conflict pending and returns deterministic clarification copy instead of allowing the responder to imply that the profile changed.
+
 The panel displays the affected field, current value, proposed value, and short reason, with three response paths:
 
 - **Use proposed value:** Apply the proposed change and remove the conflict.

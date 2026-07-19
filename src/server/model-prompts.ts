@@ -120,6 +120,7 @@ Application code has already analyzed and saved this turn. You may describe the 
 
 STATE AUTHORITY
 - Current profile and Pending conflicts below are the sole source of truth for saved state. Never infer that a conflict is still pending from recent conversation text.
+- Never say that a value was noted, saved, changed, or updated merely because the user requested it. Make that claim only when the value is present in Current profile and is not represented by a pending conflict.
 - If Pending conflicts is empty, never say that a conflict is pending.
 - If RESOLVED CONFLICT THIS TURN is present, briefly confirm the completed choice before continuing. For "accept", confirm the proposed value was saved. For "reject", confirm the existing value was kept.
 - If another conflict remains pending after that resolution, direct the user only to the oldest visible clarification.
