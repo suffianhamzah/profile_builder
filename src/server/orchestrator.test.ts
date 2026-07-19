@@ -63,18 +63,23 @@ describe("conflict resolution response", () => {
     expect(analyzeTurn).not.toHaveBeenCalled();
     expect(turn.state.profile.travelPace).toBe("packed");
     expect(turn.state.pendingConflicts).toEqual([]);
+    expect(turn.userMessage.content).toBe("packed");
+    expect(turn.state.messages.at(-1)).toEqual(turn.userMessage);
     expect(responderInput?.resolvedConflict).toEqual({
       decision: "accept",
       field: "travelPace",
       existingValue: "relaxed",
       proposedValue: "packed",
     });
+    expect(responderInput?.state.messages.at(-1)).toEqual(turn.userMessage);
     expect(events.map((event) => event.type)).toEqual([
+      "user.message.created",
       "state.updated",
       "assistant.delta",
       "assistant.delta",
       "turn.completed",
     ]);
+    expect(savedState.messages.at(-2)).toEqual(turn.userMessage);
     expect(savedState.messages.at(-1)?.content).toBe(
       "Packed pace saved. Which destinations interest you?",
     );

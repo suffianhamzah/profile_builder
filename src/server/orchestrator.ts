@@ -23,6 +23,7 @@ export type ChatTurnDependencies = {
 
 export type ResolvedConflictTurn = {
   state: AppState;
+  userMessage: Message;
   resolution: {
     decision: ResolveConflictRequest["decision"];
     field: ProfileConflict["field"];
@@ -98,10 +99,22 @@ export async function applyConflictDecision(
     throw new Error(`Conflict not found: ${id}`);
   }
 
-  const state = resolveConflict(currentState, id, decision);
+  const userMessage = createMessage(
+    "user",
+    decision === "accept" ? conflict.proposedValue : conflict.existingValue,
+  );
+  const state = resolveConflict(
+    {
+      ...currentState,
+      messages: [...currentState.messages, userMessage],
+    },
+    id,
+    decision,
+  );
   await store.save(state);
   return {
     state,
+    userMessage,
     resolution: {
       decision,
       field: conflict.field,
@@ -115,6 +128,7 @@ export async function* runConflictResolutionResponse(
   turn: ResolvedConflictTurn,
   dependencies: ChatTurnDependencies,
 ): AsyncGenerator<ChatEvent> {
+  yield { type: "user.message.created", userMessage: turn.userMessage };
   yield {
     type: "state.updated",
     profile: turn.state.profile,

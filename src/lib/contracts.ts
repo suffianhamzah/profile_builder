@@ -112,6 +112,7 @@ export type ChatRequest = {
 };
 
 export type ChatEvent =
+  | { type: "user.message.created"; userMessage: Message }
   | {
       type: "state.updated";
       profile: TravelProfile;

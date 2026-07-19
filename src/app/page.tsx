@@ -232,7 +232,13 @@ export default function Home() {
   }, [messages, streamingText, pendingConflicts]);
 
   function handleChatEvent(event: ChatEvent) {
-    if (event.type === "state.updated") {
+    if (event.type === "user.message.created") {
+      setMessages((current) =>
+        current.some((message) => message.id === event.userMessage.id)
+          ? current
+          : [...current, event.userMessage],
+      );
+    } else if (event.type === "state.updated") {
       setProfile(event.profile);
       setPendingConflicts(event.pendingConflicts);
     } else if (event.type === "assistant.delta") {

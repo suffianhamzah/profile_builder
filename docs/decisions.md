@@ -138,6 +138,10 @@ type ChatRequest = {
 
 type ChatEvent =
   | {
+      type: "user.message.created";
+      userMessage: Message;
+    }
+  | {
       type: "state.updated";
       profile: TravelProfile;
       pendingConflicts: ProfileConflict[];
@@ -186,7 +190,7 @@ type ResolveConflictRequest =
   | { decision: "reject" };
 ```
 
-`POST /api/conflicts/:id/resolve` applies the two button choices deterministically without rerunning the analyzer. After saving the choice, it streams a responder-only turn that confirms what was kept or changed and continues with one useful follow-up question. The resolved conflict is passed as explicit context, and the resulting assistant message is persisted.
+`POST /api/conflicts/:id/resolve` applies the two button choices deterministically without rerunning the analyzer. The selected current or proposed value is first persisted as a user message and emitted as `user.message.created`. The server then streams a responder-only turn that confirms what was kept or changed and continues with one useful follow-up question. The resolved conflict is passed as explicit context, and the resulting assistant message is persisted.
 
 A free-form answer uses `POST /api/chat` with an optional `resolvingConflictId`. The analyzer receives that conflict as explicit context. If its structured result clearly resolves the targeted field, the server applies the human-provided resolution and removes the conflict. If the answer remains ambiguous or changes another field, the original conflict stays pending.
 

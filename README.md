@@ -52,7 +52,7 @@ Each chat turn has three steps:
 
 The analyzer is the only model component allowed to propose structured changes. The responder cannot write the profile or run tools. The conflict card is rendered from persisted application state, so confirmation does not depend on the responder remembering to mention it.
 
-Accepting or rejecting a conflict is applied deterministically without another analyzer call. The server then streams a responder-only confirmation using the saved profile and resolved conflict as authoritative context, and continues progressive profile collection with at most one question.
+Accepting or rejecting a conflict is applied deterministically without another analyzer call. The selected preference is persisted and rendered as a user message, then the server streams a responder-only confirmation using the saved profile and resolved conflict as authoritative context. Progressive profile collection continues with at most one question.
 
 `JsonStateStore` persists one `AppState` containing the profile, conversation, and pending conflicts. Its narrow interface leaves room for a later SQLite implementation without adding database abstractions now.
 

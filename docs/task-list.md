@@ -40,6 +40,7 @@ Updated as implementation progresses. Status values are `pending`, `in progress`
 - [x] **complete** — Show only the oldest pending conflict as an inline clarification.
 - [x] **complete** — Implement proposed-value and current-value actions.
 - [x] **complete** — Stream a persisted confirmation and next question after deterministic conflict resolution.
+- [x] **complete** — Persist and render button-based conflict choices as user messages before the confirmation.
 - [x] **complete** — Implement the free-form clarification path.
 - [x] **complete** — Show loading and error states.
 
