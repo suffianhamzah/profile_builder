@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { createModelClient, parseTurnAnalysis } from "./model-client";
+import { createEmptyState } from "../lib/contracts";
+import {
+  buildAnalyzerInstructions,
+  createModelClient,
+  parseTurnAnalysis,
+} from "./model-client";
 
 describe("parseTurnAnalysis", () => {
   it("validates and returns a structured analysis", () => {
@@ -45,5 +50,18 @@ describe("createModelClient", () => {
     expect(() => createModelClient({})).toThrow(
       "MODEL_API_KEY, MODEL_BASE_URL, MODEL_NAME",
     );
+  });
+});
+
+describe("buildAnalyzerInstructions", () => {
+  it("requires field-level classification without special-casing one domain", () => {
+    const prompt = buildAnalyzerInstructions({ state: createEmptyState() });
+
+    expect(prompt).toContain("compare every proposed profile change");
+    expect(prompt).toContain("A field present in semanticConflicts must not also appear in operations");
+    expect(prompt).toContain("quiet boutique hotels");
+    expect(prompt).toContain("budgetStyle");
+    expect(prompt).toContain("preferred season");
+    expect(prompt).toContain("dietary preference");
   });
 });

@@ -7,7 +7,6 @@ import {
 } from "../lib/contracts";
 import {
   addDeterministicCustomResolution,
-  addDeterministicSemanticConflicts,
   applyTurnAnalysis,
   resolveConflict,
 } from "./profile-updates";
@@ -169,82 +168,82 @@ describe("applyTurnAnalysis", () => {
   });
 });
 
-describe("addDeterministicSemanticConflicts", () => {
-  it("guards the required vegetarian and steakhouse contradiction", () => {
+describe("semantic conflict application", () => {
+  it("blocks every normal operation for a field with a semantic conflict", () => {
     const state = createEmptyState();
-    state.profile.dietaryPreferences = ["vegetarian"];
-    const guarded = addDeterministicSemanticConflicts(
-      state,
-      {
-        ...emptyAnalysis(),
-        operations: [
-          {
-            kind: "add",
-            field: "dietaryPreferences",
-            values: ["steakhouse dining"],
-          },
-        ],
-      },
-      "I want to visit a steakhouse on every trip.",
-    );
+    state.profile.accommodationPreferences = ["quiet boutique hotels"];
 
-    const result = applyTurnAnalysis(state, guarded);
-    expect(result.profile.dietaryPreferences).toEqual(["vegetarian"]);
+    const result = applyTurnAnalysis(state, {
+      ...emptyAnalysis(),
+      operations: [
+        {
+          kind: "add",
+          field: "accommodationPreferences",
+          values: ["party hostels"],
+        },
+        {
+          kind: "add",
+          field: "interests",
+          values: ["architecture"],
+        },
+      ],
+      semanticConflicts: [
+        {
+          field: "accommodationPreferences",
+          existingValue: "quiet boutique hotels",
+          proposedValue: "party hostels",
+          reason: "These lodging styles may represent different priorities.",
+          proposedOperations: [
+            {
+              kind: "remove",
+              field: "accommodationPreferences",
+              values: ["quiet boutique hotels"],
+            },
+            {
+              kind: "add",
+              field: "accommodationPreferences",
+              values: ["party hostels"],
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(result.profile.accommodationPreferences).toEqual([
+      "quiet boutique hotels",
+    ]);
+    expect(result.profile.interests).toEqual(["architecture"]);
     expect(result.pendingConflicts).toHaveLength(1);
     expect(result.pendingConflicts[0]).toMatchObject({
-      field: "dietaryPreferences",
-      existingValue: "vegetarian",
-      proposedValue: "steakhouse dining",
+      field: "accommodationPreferences",
+      existingValue: "quiet boutique hotels",
+      proposedValue: "party hostels",
     });
   });
 
-  it("replaces an incomplete model conflict without leaking its normal update", () => {
+  it("ignores conflict operations that target a different field", () => {
     const state = createEmptyState();
-    state.profile.dietaryPreferences = ["steakhouse dining"];
-    const guarded = addDeterministicSemanticConflicts(
-      state,
-      {
-        ...emptyAnalysis(),
-        operations: [
-          {
-            kind: "add",
-            field: "dietaryPreferences",
-            values: ["vegetarian dining"],
-          },
-        ],
-        semanticConflicts: [
-          {
-            field: "dietaryPreferences",
-            existingValue: "steakhouse dining",
-            proposedValue: "vegetarian dining",
-            reason: "These preferences may conflict.",
-            proposedOperations: [
-              {
-                kind: "remove",
-                field: "dietaryPreferences",
-                values: ["steakhouse dining"],
-              },
-            ],
-          },
-        ],
-      },
-      "I want vegetarian dining now.",
-    );
+    state.profile.accommodationPreferences = ["quiet hotels"];
+    const result = applyTurnAnalysis(state, {
+      ...emptyAnalysis(),
+      semanticConflicts: [
+        {
+          field: "accommodationPreferences",
+          existingValue: "quiet hotels",
+          proposedValue: "party hostels",
+          reason: "These may conflict.",
+          proposedOperations: [
+            {
+              kind: "add",
+              field: "interests",
+              values: ["nightlife"],
+            },
+          ],
+        },
+      ],
+    });
 
-    const result = applyTurnAnalysis(state, guarded);
-    expect(result.profile.dietaryPreferences).toEqual(["steakhouse dining"]);
-    expect(result.pendingConflicts[0].proposedOperations).toEqual([
-      {
-        kind: "remove",
-        field: "dietaryPreferences",
-        values: ["steakhouse dining"],
-      },
-      {
-        kind: "add",
-        field: "dietaryPreferences",
-        values: ["vegetarian dining"],
-      },
-    ]);
+    expect(result.pendingConflicts).toEqual([]);
   });
 });
 

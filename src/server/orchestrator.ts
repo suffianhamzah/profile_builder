@@ -9,7 +9,6 @@ import { getDestinationInfo } from "./destinations";
 import type { ModelClient } from "./model-client";
 import {
   addDeterministicCustomResolution,
-  addDeterministicSemanticConflicts,
   applyTurnAnalysis,
 } from "./profile-updates";
 import type { StateStore } from "./state-store";
@@ -40,11 +39,7 @@ export async function* runChatTurn(
           request.message,
           request.resolvingConflictId,
         )
-      : addDeterministicSemanticConflicts(
-          state,
-          modelAnalysis,
-          request.message,
-        );
+      : modelAnalysis;
     state = applyTurnAnalysis(
       state,
       analysis,

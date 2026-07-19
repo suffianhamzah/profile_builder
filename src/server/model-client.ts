@@ -153,7 +153,7 @@ export class OpenAICompatibleModelClient implements ModelClient {
         json_schema: analysisJsonSchema,
       },
       messages: [
-        { role: "system", content: analyzerInstructions(input) },
+        { role: "system", content: buildAnalyzerInstructions(input) },
         {
           role: "user",
           content: `Analyze ONLY this latest user message:\n${latestUserMessage.content}`,
@@ -232,27 +232,52 @@ export function parseTurnAnalysis(content: string): TurnAnalysis {
   };
 }
 
-function analyzerInstructions(input: AnalyzeTurnInput): string {
+export function buildAnalyzerInstructions(input: AnalyzeTurnInput): string {
   const activeConflict = input.resolvingConflictId
     ? input.state.pendingConflicts.find(
         (conflict) => conflict.id === input.resolvingConflictId,
       )
     : undefined;
 
-  return `You analyze a travel conversation into structured data. Return only the required schema.
+  return `You are the profile-change analyzer for a travel application. Return only the required JSON schema. You never speak to the user.
 
-You are the only model step allowed to interpret user text into profile changes. Extract only explicit or strongly implied travel preferences. Never infer private attributes.
+Your job is to interpret ONLY the latest user message, compare every proposed profile change with the CURRENT PROFILE, and separate safe additions from changes that require human confirmation. Recent conversation is reference context only; never extract a preference from an assistant message and never infer private attributes.
 
-Rules:
-- Extract profile operations only from the latest user message supplied after these instructions. Recent conversation is reference context only; never extract a preference from an assistant message.
+PROFILE SEMANTICS
+- budgetStyle and travelPace are single-choice scalar fields.
+- wishlist, visitedDestinations, interests, preferredSeasons, dietaryPreferences, accommodationPreferences, and additionalPreferences are collections.
+- Collection values normally coexist. Treat them as conflicting only when the user explicitly replaces, retracts, corrects, or avoids a saved value, or when the new preference is logically incompatible with a saved value in the same field.
+
+ANALYSIS PROCEDURE
+1. Extract candidate changes from the latest user message.
+2. For each candidate, inspect the current value or values for that exact field.
+3. Classify it as either:
+   - compatible: genuinely new information that can coexist with the current field; put it in operations.
+   - conflict: a replacement, correction, withdrawal, or likely incompatibility; put it in semanticConflicts and do not put any operation for that field in operations.
+4. If compatibility is genuinely uncertain, prefer a semantic conflict so the user can decide. Do not invent a conflict merely because two different list values are present.
+
+CONFLICT OUTPUT RULES
+- existingValue must quote or summarize the relevant value currently stored in that field.
+- proposedValue must concisely describe what the latest user message would change it to.
+- reason must neutrally explain why the values may not coexist; do not decide for the user.
+- proposedOperations must contain the complete change to apply after approval and every operation must target the conflict's field.
+- Replacing a list value normally requires both remove(existing) and add(proposed).
+- A field present in semanticConflicts must not also appear in operations.
+
+EXAMPLES
+- Existing travelPace "relaxed" plus "I prefer packed itineraries now" is a conflict.
+- Existing accommodation preference "quiet boutique hotels" plus "party hostels are my priority" is a likely conflict.
+- Existing budgetStyle "budget" plus "make every trip luxury" is a conflict.
+- Existing preferred season "summer" plus "also interested in winter" is compatible; "I avoid summer now and only want winter" is a conflict.
+- Existing interest "food" plus new interest "architecture" is compatible.
+- Existing dietary preference "vegetarian" plus a recurring steakhouse preference is a likely conflict that needs clarification.
+
+OPERATION RULES
 - Use set only for budgetStyle or travelPace.
-- Use add for new list values. Keep list values short and user-readable.
-- Use remove only when the user explicitly withdraws a saved list value.
-- When a new value contradicts an existing preference, put it in semanticConflicts with operations that would implement it after approval. Do not also put those operations in the normal operations array.
-- A scalar replacement may remain in operations; application code will require confirmation.
-- Mention only destinations discussed in the latest user turn. Preserve a useful city or country name.
-- A steakhouse request may conflict with a stored vegetarian preference; surface uncertainty rather than deciding for the user.
-- customConflictResolution must be null unless a targeted conflict is shown below. If the answer clearly resolves it, use that exact conflict ID and operations only for its field. If unclear, set understood false with no operations.
+- Use add for compatible collection values. Keep values short and user-readable.
+- Use remove only for an explicit withdrawal; application code will still require confirmation.
+- Mention only destinations literally discussed in the latest user turn. Preserve a useful city or country name.
+- customConflictResolution must be null unless a targeted conflict is shown below. If the answer clearly resolves that conflict, use its exact ID and operations only for its field. If unclear, set understood false with no operations.
 
 Current profile:
 ${JSON.stringify(input.state.profile)}

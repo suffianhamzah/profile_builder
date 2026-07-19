@@ -9,43 +9,6 @@ import {
 
 type ConflictDecision = "accept" | "reject";
 
-const plantBasedTerms = ["vegetarian", "vegan", "plant-based", "plant based"];
-const meatDiningTerms = ["steak", "steakhouse", "meat", "barbecue", "bbq"];
-
-export function addDeterministicSemanticConflicts(
-  state: AppState,
-  analysis: TurnAnalysis,
-  latestUserMessage: string,
-): TurnAnalysis {
-  const message = normalize(latestUserMessage);
-  const existingPlantBased = state.profile.dietaryPreferences.filter((value) =>
-    containsAny(normalize(value), plantBasedTerms),
-  );
-  const existingMeatDining = state.profile.dietaryPreferences.filter((value) =>
-    containsAny(normalize(value), meatDiningTerms),
-  );
-  const proposesMeatDining = containsAny(message, meatDiningTerms);
-  const proposesPlantBased = containsAny(message, plantBasedTerms);
-
-  if (existingPlantBased.length > 0 && proposesMeatDining) {
-    return withDietaryConflict(
-      analysis,
-      existingPlantBased,
-      "steakhouse dining",
-      "Steakhouse dining may conflict with the saved plant-based preference.",
-    );
-  }
-  if (existingMeatDining.length > 0 && proposesPlantBased) {
-    return withDietaryConflict(
-      analysis,
-      existingMeatDining,
-      "vegetarian dining",
-      "Vegetarian dining may conflict with the saved meat-focused preference.",
-    );
-  }
-  return analysis;
-}
-
 export function addDeterministicCustomResolution(
   state: AppState,
   analysis: TurnAnalysis,
@@ -92,14 +55,12 @@ export function applyTurnAnalysis(
   resolvingConflictId?: string,
 ): AppState {
   let nextState = cloneState(state);
-  const reservedOperations = new Set(
-    analysis.semanticConflicts.flatMap((conflict) =>
-      conflict.proposedOperations.map(operationKey),
-    ),
+  const conflictedFields = new Set(
+    analysis.semanticConflicts.map((conflict) => conflict.field),
   );
 
   for (const operation of analysis.operations) {
-    if (!reservedOperations.has(operationKey(operation))) {
+    if (!conflictedFields.has(operation.field)) {
       nextState = applyGuardedOperation(nextState, operation);
     }
   }
@@ -334,53 +295,6 @@ function normalize(value: string): string {
 
 function containsAny(value: string, terms: string[]): boolean {
   return terms.some((term) => value.includes(term));
-}
-
-function withDietaryConflict(
-  analysis: TurnAnalysis,
-  existingValues: string[],
-  proposedValue: string,
-  reason: string,
-): TurnAnalysis {
-  const proposedOperations: ProfileOperation[] = [
-    {
-      kind: "remove",
-      field: "dietaryPreferences",
-      values: existingValues,
-    },
-    {
-      kind: "add",
-      field: "dietaryPreferences",
-      values: [proposedValue],
-    },
-  ];
-  return {
-    ...analysis,
-    operations: analysis.operations.filter(
-      (operation) => operation.field !== "dietaryPreferences",
-    ),
-    semanticConflicts: [
-      ...analysis.semanticConflicts.filter(
-        (conflict) => conflict.field !== "dietaryPreferences",
-      ),
-      {
-        field: "dietaryPreferences",
-        existingValue: existingValues.join(", "),
-        proposedValue,
-        reason,
-        proposedOperations,
-      },
-    ],
-  };
-}
-
-function operationKey(operation: ProfileOperation): string {
-  return JSON.stringify({
-    ...operation,
-    ...(operation.kind === "set"
-      ? { value: normalize(operation.value) }
-      : { values: operation.values.map(normalize).sort() }),
-  });
 }
 
 function cloneState(state: AppState): AppState {
